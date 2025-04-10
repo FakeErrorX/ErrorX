@@ -1,0 +1,25 @@
+display_name: ErrorX
+package_name: ErrorX
+maintainer:
+  name: FakeErrorX
+  email: info@errorx.net
+
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: ./assets/images/icon.png
+
+
+keywords:
+  - ErrorX
+  - Clash
+  - ClashMeta
+  - Proxy
+
+generic_name: ErrorX
+
+categories:
+  - Network
+
+startup_notify: true

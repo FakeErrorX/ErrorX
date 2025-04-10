@@ -1,0 +1,12 @@
+app_id: 728B3532-C74B-4870-9068-BE70FE12A3E6
+app_name: ErrorX
+publisher: FakeErrorX
+publisher_url: https://github.com/FakeErrorX/ErrorX
+display_name: ErrorX
+executable_name: ErrorX.exe
+output_base_file_name: ErrorX.exe
+setup_icon_file: ..\windows\runner\resources\app_icon.ico
+locales:
+  - lang: zh
+    file: ..\windows\packaging\exe\ChineseSimplified.isl
+  - lang: en
