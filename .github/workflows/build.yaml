@@ -145,7 +145,7 @@ jobs:
           git add CHANGELOG.md
           if ! git diff --cached --quiet; then
             echo "Commit pushing"
-            git config --local user.email "info@errorx.net"
+            git config --local user.email "info@errorx.me"
             git config --local user.name "FakeErrorX"
             git commit -m "Update changelog"
             git push
@@ -239,4 +239,5 @@ jobs:
         with:
           files: ./dist/*
           body_path: './release.md'
+          tag_name: ${{ env.VERSION_TAG }}
 
