@@ -227,4 +227,3 @@ jobs:
         with:
           files: ./dist/*
           body_path: './release.md'
-
