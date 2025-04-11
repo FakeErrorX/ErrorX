@@ -1,4 +1,4 @@
-# <div align="center">⚡ ErrorX</div>
+# <div align="center"><img src="snapshots/logo.png" width="150px" alt="ErrorX Logo"/></div>
 
 <div align="center">
   <h1>ErrorX</h1>
@@ -98,30 +98,32 @@
 
 ## 💻 Platforms
 
-<table>
-<tr>
-<td width="25%" align="center">
-  
-### 🤖 Android
-<img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/android.svg" width="50px"/>
-</td>
-<td width="25%" align="center">
-  
-### 🪟 Windows
-<img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/windows.svg" width="50px"/>
-</td>
-<td width="25%" align="center">
-  
-### 🍎 macOS
-<img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/macos.svg" width="50px"/>
-</td>
-<td width="25%" align="center">
-  
-### 🐧 Linux
-<img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/linux.svg" width="50px"/>
-</td>
-</tr>
-</table>
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="25%">
+        <img src="snapshots/android.png" width="64px" alt="Android"/>
+        <br/>
+        <b>Android</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="snapshots/windows.png" width="64px" alt="Windows"/>
+        <br/>
+        <b>Windows</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="snapshots/macos.png" width="64px" alt="macOS"/>
+        <br/>
+        <b>macOS</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="snapshots/linux.png" width="64px" alt="Linux"/>
+        <br/>
+        <b>Linux</b>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ## 📱 Quick Actions
 
