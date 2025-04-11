@@ -1,30 +1,76 @@
 package net.errorx.vpn.services
 
+import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.content.Intent
+import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import androidx.annotation.RequiresApi
+import androidx.lifecycle.Observer
 import net.errorx.vpn.GlobalState
 import net.errorx.vpn.RunState
 import net.errorx.vpn.TempActivity
 
+
+@RequiresApi(Build.VERSION_CODES.N)
 class ErrorXTileService : TileService() {
-    override fun onClick() {
-        super.onClick()
-        val intent = Intent(this, TempActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        intent.action = when (GlobalState.runState) {
-            RunState.RUNNING -> "${packageName}.action.STOP"
-            else -> "${packageName}.action.START"
+
+    private val observer = Observer<RunState> { runState ->
+        updateTile(runState)
+    }
+
+    private fun updateTile(runState: RunState) {
+        if (qsTile != null) {
+            qsTile.state = when (runState) {
+                RunState.START -> Tile.STATE_ACTIVE
+                RunState.PENDING -> Tile.STATE_UNAVAILABLE
+                RunState.STOP -> Tile.STATE_INACTIVE
+            }
+            qsTile.updateTile()
         }
-        startActivityAndCollapse(intent)
     }
 
     override fun onStartListening() {
         super.onStartListening()
-        qsTile?.state = when (GlobalState.runState) {
-            RunState.RUNNING -> Tile.STATE_ACTIVE
-            else -> Tile.STATE_INACTIVE
-        }
-        qsTile?.updateTile()
+        GlobalState.runState.value?.let { updateTile(it) }
+        GlobalState.runState.observeForever(observer)
     }
-} 
+
+    @SuppressLint("StartActivityAndCollapseDeprecated")
+    private fun activityTransfer() {
+        val intent = Intent(this, TempActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+        val pendingIntent = if (Build.VERSION.SDK_INT >= 31) {
+            PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        } else {
+            PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startActivityAndCollapse(pendingIntent)
+        } else {
+            startActivityAndCollapse(intent)
+        }
+    }
+
+    override fun onClick() {
+        super.onClick()
+        activityTransfer()
+        GlobalState.handleToggle()
+    }
+
+    override fun onDestroy() {
+        GlobalState.runState.removeObserver(observer)
+        super.onDestroy()
+    }
+}
