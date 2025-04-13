@@ -269,7 +269,7 @@ class _DisclaimerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListItem(
-      leading: const Icon(Icons.gavel),
+      leading: const Icon(Icons.menu_book),
       title: Text(appLocalizations.disclaimer),
       onTap: () async {
         final isDisclaimerAccepted =

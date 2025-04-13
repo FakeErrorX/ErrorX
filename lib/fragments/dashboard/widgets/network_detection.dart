@@ -29,6 +29,7 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
   bool? _preIsStart;
   Timer? _setTimeoutTimer;
   CancelToken? cancelToken;
+  bool _isIpHidden = true;
 
   @override
   void initState() {
@@ -131,6 +132,17 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
     return String.fromCharCode(firstLetter) + String.fromCharCode(secondLetter);
   }
 
+  String _maskIpAddress(String ip) {
+    // Replace all digits with asterisks except for dots
+    return ip.replaceAll(RegExp(r'[0-9]'), '*');
+  }
+
+  void _toggleIpVisibility() {
+    setState(() {
+      _isIpHidden = !_isIpHidden;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -211,7 +223,20 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
                             color: context.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                      )
+                      ),
+                      if (ipInfo != null)
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: _toggleIpVisibility,
+                            icon: Icon(
+                              size: 16,
+                              _isIpHidden ? Icons.visibility_off : Icons.visibility,
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -225,7 +250,7 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
                       child: ipInfo != null
                           ? TooltipText(
                               text: Text(
-                                ipInfo.ip,
+                                _isIpHidden ? _maskIpAddress(ipInfo.ip) : ipInfo.ip,
                                 style: context.textTheme.bodyMedium?.toLight
                                     .adjustSize(1),
                                 maxLines: 1,

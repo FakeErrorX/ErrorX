@@ -306,6 +306,7 @@ class FindProcessItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, ref) {
+    // Make this reactive again to the actual setting
     final findProcess = ref.watch(patchClashConfigProvider
         .select((state) => state.findProcessMode == FindProcessMode.always));
 
@@ -315,6 +316,7 @@ class FindProcessItem extends ConsumerWidget {
       subtitle: Text(appLocalizations.findProcessModeDesc),
       delegate: SwitchDelegate(
         value: findProcess,
+        // Re-enable the toggle
         onChanged: (bool value) async {
           ref.read(patchClashConfigProvider.notifier).updateState(
                 (state) => state.copyWith(

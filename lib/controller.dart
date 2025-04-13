@@ -572,10 +572,17 @@ class AppController {
             title: appLocalizations.disclaimer,
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop<bool>(false);
+                onPressed: () async {
+                  final Uri url = Uri.parse('https://errorx.net/docs');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url);
+                  }
+                  _ref.read(appSettingProvider.notifier).updateState(
+                        (state) => state.copyWith(disclaimerAccepted: true),
+                      );
+                  Navigator.of(context).pop<bool>(true);
                 },
-                child: Text(appLocalizations.exit),
+                child: Text(appLocalizations.openDocs),
               ),
               TextButton(
                 onPressed: () {

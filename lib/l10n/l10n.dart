@@ -170,10 +170,10 @@ class AppLocalizations {
     );
   }
 
-  /// `Network detection`
+  /// `Public IP`
   String get networkDetection {
     return Intl.message(
-      'Network detection',
+      'Public IP',
       name: 'networkDetection',
       desc: '',
       args: [],
@@ -945,10 +945,10 @@ class AppLocalizations {
     );
   }
 
-  /// `A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.`
+  /// `A multi-platform ErrorX BDIX client based on ClashMeta,simple and easy to use.`
   String get desc {
     return Intl.message(
-      'A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.',
+      'A multi-platform ErrorX BDIX client based on ClashMeta,simple and easy to use.',
       name: 'desc',
       desc: '',
       args: [],
@@ -2270,24 +2270,24 @@ class AppLocalizations {
     return Intl.message('TUN', name: 'action_tun', desc: '', args: []);
   }
 
-  /// `Disclaimer`
+  /// `Tutorial`
   String get disclaimer {
-    return Intl.message('Disclaimer', name: 'disclaimer', desc: '', args: []);
+    return Intl.message('Tutorial', name: 'disclaimer', desc: '', args: []);
   }
 
-  /// `This software is only used for non-commercial purposes such as learning exchanges and scientific research. It is strictly prohibited to use this software for commercial purposes. Any commercial activity, if any, has nothing to do with this software.`
+  /// `Check out our comprehensive documentation for guides and instructions on using this software. Visit https://errorx.net/docs for detailed tutorials.`
   String get disclaimerDesc {
     return Intl.message(
-      'This software is only used for non-commercial purposes such as learning exchanges and scientific research. It is strictly prohibited to use this software for commercial purposes. Any commercial activity, if any, has nothing to do with this software.',
+      'Check out our comprehensive documentation for guides and instructions on using this software. Visit https://errorx.net/docs for detailed tutorials.',
       name: 'disclaimerDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Agree`
+  /// `No, Thanks`
   String get agree {
-    return Intl.message('Agree', name: 'agree', desc: '', args: []);
+    return Intl.message('No, Thanks', name: 'agree', desc: '', args: []);
   }
 
   /// `Hotkey Management`
@@ -2904,6 +2904,11 @@ class AppLocalizations {
       args: [],
     );
   }
+
+  /// `Open Docs`
+  String get openDocs {
+    return Intl.message('Open Docs', name: 'openDocs', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -2912,8 +2917,6 @@ class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {
   List<Locale> get supportedLocales {
     return const <Locale>[
       Locale.fromSubtags(languageCode: 'en'),
-      Locale.fromSubtags(languageCode: 'ja'),
-      Locale.fromSubtags(languageCode: 'ru'),
       Locale.fromSubtags(languageCode: 'zh', countryCode: 'CN'),
     ];
   }

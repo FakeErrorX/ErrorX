@@ -64,7 +64,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Boot up by using admin mode",
     ),
     "ago": MessageLookupByLibrary.simpleMessage(" Ago"),
-    "agree": MessageLookupByLibrary.simpleMessage("Agree"),
+    "agree": MessageLookupByLibrary.simpleMessage("No, Thanks"),
     "allApps": MessageLookupByLibrary.simpleMessage("All apps"),
     "allowBypass": MessageLookupByLibrary.simpleMessage(
       "Allow applications to bypass VPN",
@@ -195,16 +195,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "Are you sure you want to delete the selected rule?",
     ),
     "desc": MessageLookupByLibrary.simpleMessage(
-      "A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.",
+      "A multi-platform ErrorX BDIX client based on ClashMeta,simple and easy to use.",
     ),
     "detectionTip": MessageLookupByLibrary.simpleMessage(
       "Relying on third-party api is for reference only",
     ),
     "direct": MessageLookupByLibrary.simpleMessage("Direct"),
-    "disclaimer": MessageLookupByLibrary.simpleMessage("Disclaimer"),
+    "disclaimer": MessageLookupByLibrary.simpleMessage("Tutorial"),
     "disclaimerDesc": MessageLookupByLibrary.simpleMessage(
-      "This software is only used for non-commercial purposes such as learning exchanges and scientific research. It is strictly prohibited to use this software for commercial purposes. Any commercial activity, if any, has nothing to do with this software.",
-    ),
+      "Check out our comprehensive documentation for guides and instructions on using this software. Visit https://errorx.net/docs for detailed tutorials."),
     "discoverNewVersion": MessageLookupByLibrary.simpleMessage(
       "Discover the new version",
     ),
@@ -229,11 +228,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "When the app is in the background, the app is hidden from the recent task",
     ),
     "exit": MessageLookupByLibrary.simpleMessage("Exit"),
+    "openDocs": MessageLookupByLibrary.simpleMessage("Open Docs"),
     "expand": MessageLookupByLibrary.simpleMessage("Standard"),
     "expirationTime": MessageLookupByLibrary.simpleMessage("Expiration time"),
     "exportFile": MessageLookupByLibrary.simpleMessage("Export file"),
     "exportLogs": MessageLookupByLibrary.simpleMessage("Export logs"),
-    "exportSuccess": MessageLookupByLibrary.simpleMessage("Export Success"),
+    "exportSuccess": MessageLookupByLibrary.simpleMessage(
+      "Export Success",
+    ),
     "externalController": MessageLookupByLibrary.simpleMessage(
       "ExternalController",
     ),
@@ -377,7 +379,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modify network-related settings",
     ),
     "networkDetection": MessageLookupByLibrary.simpleMessage(
-      "Network detection",
+      "Public IP",
     ),
     "networkSpeed": MessageLookupByLibrary.simpleMessage("Network speed"),
     "noData": MessageLookupByLibrary.simpleMessage("No data"),

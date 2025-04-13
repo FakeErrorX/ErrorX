@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:errorx/enum/enum.dart';
 import 'package:errorx/models/models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -428,10 +428,10 @@ class ClashConfig with _$ClashConfig {
     @Default(false) @JsonKey(name: "allow-lan") bool allowLan,
     @Default(LogLevel.info) @JsonKey(name: "log-level") LogLevel logLevel,
     @Default(false) bool ipv6,
-    @Default(FindProcessMode.off)
+    @Default(FindProcessMode.always)
     @JsonKey(
       name: "find-process-mode",
-      unknownEnumValue: FindProcessMode.off,
+      unknownEnumValue: FindProcessMode.always,
     )
     FindProcessMode findProcessMode,
     @Default(defaultKeepAliveInterval)
@@ -450,7 +450,7 @@ class ClashConfig with _$ClashConfig {
     @Default([]) @JsonKey(name: "proxy-groups") List<ProxyGroup> proxyGroups,
     @Default([]) List<String> rule,
     @JsonKey(name: "global-ua") String? globalUa,
-    @Default(ExternalControllerStatus.close)
+    @Default(ExternalControllerStatus.open)
     @JsonKey(name: "external-controller")
     ExternalControllerStatus externalController,
     @Default({}) HostsMap hosts,
