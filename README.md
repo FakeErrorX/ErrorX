@@ -10,11 +10,7 @@
 
   <br/>
   
-  |💻 Desktop|📱 Mobile|
-  |:---:|:---:|
-  |<img src="snapshots/desktop.gif" width="600px"/>|<img src="snapshots/mobile.gif" height="400px"/>|
-  
-  *A powerful multi-platform proxy client based on ClashMeta*
+  *A powerful multi-platform ErrorX BDIX client based on ClashMeta*
   
   [📥 Download](#download) • [🚀 Features](#features) • [🛠️ Build](#build) • [📱 Platforms](#platforms)
 
