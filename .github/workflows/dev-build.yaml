@@ -1,0 +1,120 @@
+name: Development Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from'
+        required: true
+        type: string
+        default: 'main'
+      platform:
+        description: 'Platform to build for'
+        required: true
+        type: choice
+        options:
+          - android
+          - windows-amd64
+          - windows-arm64
+          - linux-amd64
+          - linux-arm64
+          - macos-amd64
+          - macos-arm64
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - platform: android
+            os: ubuntu-latest
+            arch: ''
+          - platform: windows-amd64
+            os: windows-latest
+            arch: amd64
+          - platform: windows-arm64
+            os: windows-11-arm
+            arch: arm64
+          - platform: linux-amd64
+            os: ubuntu-latest
+            arch: amd64
+          - platform: linux-arm64
+            os: ubuntu-24.04-arm
+            arch: arm64
+          - platform: macos-amd64
+            os: macos-13
+            arch: amd64
+          - platform: macos-arm64
+            os: macos-latest
+            arch: arm64
+        exclude:
+          - platform: ${{ github.event.inputs.platform != matrix.platform }}
+
+    steps:
+      - name: Setup rust
+        if: startsWith(matrix.os, 'windows-11-arm')
+        run: |
+          Invoke-WebRequest -Uri "https://win.rustup.rs/aarch64" -OutFile rustup-init.exe
+          .\rustup-init.exe -y --default-toolchain stable
+          $cargoPath = "$env:USERPROFILE\.cargo\bin"
+          Add-Content $env:GITHUB_PATH $cargoPath
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Generate secrets.dart
+        run: |
+          echo "// This file contains API endpoints and credentials" > lib/services/secrets.dart
+          echo "// It should be gitignored and generated during build" >> lib/services/secrets.dart
+          echo "" >> lib/services/secrets.dart
+          echo "const String apiBaseUrl = '${{ secrets.BASE_URL }}';" >> lib/services/secrets.dart
+          echo "const String apiWebSocketUrl = '${{ secrets.WS_URL }}';" >> lib/services/secrets.dart
+          echo "const String apiKeyValue = '${{ secrets.API_KEY }}';" >> lib/services/secrets.dart
+          echo "const String apiSecretValue = '${{ secrets.API_SECRET }}';" >> lib/services/secrets.dart
+
+      - name: Setup Android Signing
+        if: matrix.platform == 'android'
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 --decode > android/app/keystore.jks
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/local.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/local.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/local.properties
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+          cache-dependency-path: |
+            core/go.sum
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ (startsWith(matrix.os, 'windows-11-arm') || startsWith(matrix.os, 'ubuntu-24.04-arm')) && 'master' || 'stable' }}
+          cache: true
+
+      - name: Get Flutter Dependencies
+        run: flutter pub get
+
+      - name: Setup Build
+        run: |
+          ${{ startsWith(matrix.platform, 'android') && 'dart setup.dart android' || format('dart setup.dart {0} --arch {1}', split(matrix.platform, '-')[0], matrix.arch) }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-${{ matrix.platform }}-${{ github.event.inputs.branch }}
+          path: ./dist
+          retention-days: 7
+
+  changelog:
+    if: false  # Disabled for dev builds
+    runs-on: ubuntu-latest
+    needs: [ build ]
+    steps:
+      - name: No changelog for dev builds
+        run: echo "Changelog generation skipped for development builds" 
