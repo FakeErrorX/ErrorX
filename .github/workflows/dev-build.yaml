@@ -30,26 +30,34 @@ jobs:
           - platform: android
             os: ubuntu-latest
             arch: ''
+            build_cmd: 'dart setup.dart android'
           - platform: windows-amd64
             os: windows-latest
             arch: amd64
+            build_cmd: 'dart setup.dart windows --arch amd64'
           - platform: windows-arm64
             os: windows-11-arm
             arch: arm64
+            build_cmd: 'dart setup.dart windows --arch arm64'
           - platform: linux-amd64
             os: ubuntu-latest
             arch: amd64
+            build_cmd: 'dart setup.dart linux --arch amd64'
           - platform: linux-arm64
             os: ubuntu-24.04-arm
             arch: arm64
+            build_cmd: 'dart setup.dart linux --arch arm64'
           - platform: macos-amd64
             os: macos-13
             arch: amd64
+            build_cmd: 'dart setup.dart macos --arch amd64'
           - platform: macos-arm64
             os: macos-latest
             arch: arm64
-        exclude:
-          - platform: ${{ github.event.inputs.platform != matrix.platform }}
+            build_cmd: 'dart setup.dart macos --arch arm64'
+      fail-fast: false
+
+    if: github.event.inputs.platform == matrix.platform
 
     steps:
       - name: Setup rust
@@ -101,8 +109,7 @@ jobs:
         run: flutter pub get
 
       - name: Setup Build
-        run: |
-          ${{ startsWith(matrix.platform, 'android') && 'dart setup.dart android' || format('dart setup.dart {0} --arch {1}', split(matrix.platform, '-')[0], matrix.arch) }}
+        run: ${{ matrix.build_cmd }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
