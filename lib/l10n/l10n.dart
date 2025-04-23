@@ -945,10 +945,10 @@ class AppLocalizations {
     );
   }
 
-  /// `A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.`
+  /// `A multi-platform ErrorX BDIX client based on ClashMeta, simple and easy to use.`
   String get desc {
     return Intl.message(
-      'A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.',
+      'A multi-platform ErrorX BDIX client based on ClashMeta, simple and easy to use.',
       name: 'desc',
       desc: '',
       args: [],

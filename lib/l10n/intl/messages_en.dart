@@ -195,7 +195,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Are you sure you want to delete the selected rule?",
     ),
     "desc": MessageLookupByLibrary.simpleMessage(
-      "A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.",
+      "A multi-platform ErrorX BDIX client based on ClashMeta, simple and easy to use.",
     ),
     "detectionTip": MessageLookupByLibrary.simpleMessage(
       "Relying on third-party api is for reference only",
