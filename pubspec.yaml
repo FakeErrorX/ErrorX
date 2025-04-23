@@ -1,5 +1,5 @@
 name: errorx
-description: A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.
+description: A multi-platform ErrorX BDIX client based on ClashMeta, simple and easy to use.
 publish_to: 'none'
 version: 1.0.0+202504081
 environment:
