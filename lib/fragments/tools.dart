@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'backup_and_recovery.dart';
 import 'theme.dart';
 import 'package:path/path.dart' show dirname, join;
+import 'package:url_launcher/url_launcher.dart';
 
 class ToolsFragment extends ConsumerStatefulWidget {
   const ToolsFragment({super.key});
@@ -58,7 +59,7 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> {
     return generateSection(
       title: appLocalizations.other,
       items: [
-        _DisclaimerItem(),
+        _DocsItem(),
         _InfoItem(),
       ],
     );
@@ -68,7 +69,6 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> {
     return generateSection(
       title: appLocalizations.settings,
       items: [
-        _LocaleItem(),
         _ThemeItem(),
         _BackupItem(),
         if (system.isDesktop) _HotkeyItem(),
@@ -82,7 +82,6 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(appSettingProvider.select((state) => state.locale));
     final items = [
       Consumer(
         builder: (_, ref, __) {
@@ -105,39 +104,6 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> {
       itemCount: items.length,
       itemBuilder: (_, index) => items[index],
       padding: const EdgeInsets.only(bottom: 20),
-    );
-  }
-}
-
-class _LocaleItem extends ConsumerWidget {
-  const _LocaleItem();
-
-  String _getLocaleString(Locale? locale) {
-    if (locale == null) return appLocalizations.defaultText;
-    return Intl.message(locale.toString());
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final locale =
-        ref.watch(appSettingProvider.select((state) => state.locale));
-    final subTitle = locale ?? appLocalizations.defaultText;
-    final currentLocale = other.getLocaleForString(locale);
-    return ListItem<Locale?>.options(
-      leading: const Icon(Icons.language_outlined),
-      title: Text(appLocalizations.language),
-      subtitle: Text(Intl.message(subTitle)),
-      delegate: OptionsDelegate(
-        title: appLocalizations.language,
-        options: [null, ...AppLocalizations.delegate.supportedLocales],
-        onChanged: (Locale? locale) {
-          ref.read(appSettingProvider.notifier).updateState(
-                (state) => state.copyWith(locale: locale?.toString()),
-              );
-        },
-        textBuilder: (locale) => _getLocaleString(locale),
-        value: currentLocale,
-      ),
     );
   }
 }
@@ -263,20 +229,16 @@ class _SettingItem extends StatelessWidget {
   }
 }
 
-class _DisclaimerItem extends StatelessWidget {
-  const _DisclaimerItem();
+class _DocsItem extends StatelessWidget {
+  const _DocsItem();
 
   @override
   Widget build(BuildContext context) {
     return ListItem(
-      leading: const Icon(Icons.gavel),
-      title: Text(appLocalizations.disclaimer),
+      leading: const Icon(Icons.description),
+      title: Text("Docs"),
       onTap: () async {
-        final isDisclaimerAccepted =
-            await globalState.appController.showDisclaimer();
-        if (!isDisclaimerAccepted) {
-          globalState.appController.handleExit();
-        }
+        await launchUrl(Uri.parse("https://errorx.net/docs"));
       },
     );
   }

@@ -170,10 +170,10 @@ class AppLocalizations {
     );
   }
 
-  /// `Network detection`
+  /// `Public IP`
   String get networkDetection {
     return Intl.message(
-      'Network detection',
+      'Public IP',
       name: 'networkDetection',
       desc: '',
       args: [],
@@ -253,26 +253,6 @@ class AppLocalizations {
   /// `English`
   String get en {
     return Intl.message('English', name: 'en', desc: '', args: []);
-  }
-
-  /// `Japanese`
-  String get ja {
-    return Intl.message('Japanese', name: 'ja', desc: '', args: []);
-  }
-
-  /// `Russian`
-  String get ru {
-    return Intl.message('Russian', name: 'ru', desc: '', args: []);
-  }
-
-  /// `Simplified Chinese`
-  String get zh_CN {
-    return Intl.message(
-      'Simplified Chinese',
-      name: 'zh_CN',
-      desc: '',
-      args: [],
-    );
   }
 
   /// `Theme`
@@ -1485,9 +1465,9 @@ class AppLocalizations {
     );
   }
 
-  /// `Intranet IP`
+  /// `Private IP`
   String get intranetIP {
-    return Intl.message('Intranet IP', name: 'intranetIP', desc: '', args: []);
+    return Intl.message('Private IP', name: 'intranetIP', desc: '', args: []);
   }
 
   /// `View`
@@ -2275,10 +2255,10 @@ class AppLocalizations {
     return Intl.message('Disclaimer', name: 'disclaimer', desc: '', args: []);
   }
 
-  /// `This software is only used for non-commercial purposes such as learning exchanges and scientific research. It is strictly prohibited to use this software for commercial purposes. Any commercial activity, if any, has nothing to do with this software.`
+  /// `ErrorX is for legal use only. We does not log your activity and respects your privacy. Misuse is prohibited. By using our service, you agree to our Terms of Service and Privacy Policy.`
   String get disclaimerDesc {
     return Intl.message(
-      'This software is only used for non-commercial purposes such as learning exchanges and scientific research. It is strictly prohibited to use this software for commercial purposes. Any commercial activity, if any, has nothing to do with this software.',
+      'ErrorX is for legal use only. We does not log your activity and respects your privacy. Misuse is prohibited. By using our service, you agree to our Terms of Service and Privacy Policy.',
       name: 'disclaimerDesc',
       desc: '',
       args: [],
@@ -2912,9 +2892,6 @@ class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {
   List<Locale> get supportedLocales {
     return const <Locale>[
       Locale.fromSubtags(languageCode: 'en'),
-      Locale.fromSubtags(languageCode: 'ja'),
-      Locale.fromSubtags(languageCode: 'ru'),
-      Locale.fromSubtags(languageCode: 'zh', countryCode: 'CN'),
     ];
   }
 

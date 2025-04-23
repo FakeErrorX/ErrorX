@@ -206,7 +206,9 @@ class _GeoDataListItemState extends State<GeoDataListItem> {
       },
       silence: false,
     );
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   updateGeoDateItem() async {

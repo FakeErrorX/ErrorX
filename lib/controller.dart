@@ -599,10 +599,12 @@ class AppController {
     if (_ref.read(appSettingProvider).disclaimerAccepted) {
       return;
     }
-    final isDisclaimerAccepted = await showDisclaimer();
-    if (!isDisclaimerAccepted) {
-      await handleExit();
-    }
+    
+    // Auto-accept the disclaimer without showing dialog
+    _ref.read(appSettingProvider.notifier).updateState(
+      (state) => state.copyWith(disclaimerAccepted: true),
+    );
+    
     return;
   }
 

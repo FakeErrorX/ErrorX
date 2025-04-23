@@ -219,7 +219,6 @@ class ListItem<T> extends StatelessWidget {
     Widget? leading,
   }) {
     return ListTile(
-      key: key,
       dense: dense,
       titleTextStyle: titleTextStyle,
       subtitleTextStyle: subtitleTextStyle,
