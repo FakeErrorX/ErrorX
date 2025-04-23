@@ -304,10 +304,22 @@ class UnifiedDelayItem extends ConsumerWidget {
 class FindProcessItem extends ConsumerWidget {
   const FindProcessItem({super.key});
 
+  static bool _hasInitialized = false;
+
   @override
   Widget build(BuildContext context, ref) {
     final findProcess = ref.watch(patchClashConfigProvider
         .select((state) => state.findProcessMode == FindProcessMode.always));
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(patchClashConfigProvider.notifier).updateState(
+              (state) => state.copyWith(
+                findProcessMode: FindProcessMode.always,
+              ),
+            );
+      });
+    }
 
     return ListItem.switchItem(
       leading: const Icon(Icons.polymer_outlined),
@@ -383,10 +395,23 @@ class GeodataLoaderItem extends ConsumerWidget {
 class ExternalControllerItem extends ConsumerWidget {
   const ExternalControllerItem({super.key});
 
+  static bool _hasInitialized = false;
+
   @override
   Widget build(BuildContext context, ref) {
     final hasExternalController = ref.watch(patchClashConfigProvider.select(
         (state) => state.externalController == ExternalControllerStatus.open));
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(patchClashConfigProvider.notifier).updateState(
+              (state) => state.copyWith(
+                externalController: ExternalControllerStatus.open,
+              ),
+            );
+      });
+    }
+
     return ListItem.switchItem(
       leading: const Icon(Icons.api_outlined),
       title: Text(appLocalizations.externalController),

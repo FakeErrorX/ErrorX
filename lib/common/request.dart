@@ -104,7 +104,10 @@ class Request {
         }
         return source.value(response.data!);
       } catch (e) {
-        commonPrint.log("checkIp error ===> $e");
+        // Don't log cancelled requests as they're intentional
+        if (e is! DioException || e.type != DioExceptionType.cancel) {
+          commonPrint.log("checkIp error ===> $e");
+        }
         if (e is DioException && e.type == DioExceptionType.cancel) {
           throw "cancelled";
         }

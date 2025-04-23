@@ -29,6 +29,7 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
   bool? _preIsStart;
   Timer? _setTimeoutTimer;
   CancelToken? cancelToken;
+  bool _showIP = false; // Track whether to show the real IP or masked version
 
   @override
   void initState() {
@@ -131,6 +132,11 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
     return String.fromCharCode(firstLetter) + String.fromCharCode(secondLetter);
   }
 
+  // Function to mask the IP address
+  String _maskIpAddress(String ip) {
+    return ip.replaceAllMapped(RegExp(r'[0-9]'), (match) => '*');
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -192,26 +198,24 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
                         ),
                       ),
                       SizedBox(width: 2),
-                      AspectRatio(
-                        aspectRatio: 1,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            globalState.showMessage(
-                              title: appLocalizations.tip,
-                              message: TextSpan(
-                                text: appLocalizations.detectionTip,
-                              ),
-                              cancelable: false,
-                            );
-                          },
-                          icon: Icon(
-                            size: 16,
-                            Icons.info_outline,
-                            color: context.colorScheme.onSurfaceVariant,
+                      // Toggle button to show/hide IP
+                      if (ipInfo != null)
+                        AspectRatio(
+                          aspectRatio: 1,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () {
+                              setState(() {
+                                _showIP = !_showIP;
+                              });
+                            },
+                            icon: Icon(
+                              size: 16,
+                              _showIP ? Icons.visibility : Icons.visibility_off,
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      )
+                        )
                     ],
                   ),
                 ),
@@ -225,7 +229,7 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
                       child: ipInfo != null
                           ? TooltipText(
                               text: Text(
-                                ipInfo.ip,
+                                _showIP ? ipInfo.ip : _maskIpAddress(ipInfo.ip),
                                 style: context.textTheme.bodyMedium?.toLight
                                     .adjustSize(1),
                                 maxLines: 1,

@@ -203,7 +203,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "direct": MessageLookupByLibrary.simpleMessage("Direct"),
     "disclaimer": MessageLookupByLibrary.simpleMessage("Disclaimer"),
     "disclaimerDesc": MessageLookupByLibrary.simpleMessage(
-      "This software is only used for non-commercial purposes such as learning exchanges and scientific research. It is strictly prohibited to use this software for commercial purposes. Any commercial activity, if any, has nothing to do with this software.",
+      "ErrorX is for legal use only. We does not log your activity and respects your privacy. Misuse is prohibited. By using our service, you agree to our Terms of Service and Privacy Policy.",
     ),
     "discoverNewVersion": MessageLookupByLibrary.simpleMessage(
       "Discover the new version",
@@ -309,7 +309,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "intelligentSelected": MessageLookupByLibrary.simpleMessage(
       "Intelligent selection",
     ),
-    "intranetIP": MessageLookupByLibrary.simpleMessage("Intranet IP"),
+    "intranetIP": MessageLookupByLibrary.simpleMessage("Private IP"),
     "ipcidr": MessageLookupByLibrary.simpleMessage("Ipcidr"),
     "ipv6Desc": MessageLookupByLibrary.simpleMessage(
       "When turned on it will be able to receive IPv6 traffic",
@@ -317,7 +317,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "ipv6InboundDesc": MessageLookupByLibrary.simpleMessage(
       "Allow IPv6 inbound",
     ),
-    "ja": MessageLookupByLibrary.simpleMessage("Japanese"),
     "just": MessageLookupByLibrary.simpleMessage("Just"),
     "keepAliveIntervalDesc": MessageLookupByLibrary.simpleMessage(
       "Tcp keep alive interval",
@@ -377,7 +376,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modify network-related settings",
     ),
     "networkDetection": MessageLookupByLibrary.simpleMessage(
-      "Network detection",
+      "Public IP",
     ),
     "networkSpeed": MessageLookupByLibrary.simpleMessage("Network speed"),
     "noData": MessageLookupByLibrary.simpleMessage("No data"),
@@ -545,7 +544,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Bypass private route address",
     ),
     "routeMode_config": MessageLookupByLibrary.simpleMessage("Use config"),
-    "ru": MessageLookupByLibrary.simpleMessage("Russian"),
     "rule": MessageLookupByLibrary.simpleMessage("Rule"),
     "ruleName": MessageLookupByLibrary.simpleMessage("Rule name"),
     "ruleProviderEmptyTip": MessageLookupByLibrary.simpleMessage(
@@ -669,6 +667,5 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whitelistMode": MessageLookupByLibrary.simpleMessage("Whitelist mode"),
     "years": MessageLookupByLibrary.simpleMessage("Years"),
-    "zh_CN": MessageLookupByLibrary.simpleMessage("Simplified Chinese"),
   };
 }
