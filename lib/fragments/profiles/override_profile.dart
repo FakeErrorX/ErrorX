@@ -581,6 +581,9 @@ class RuleTitle extends ConsumerWidget {
                     ),
                     style: IconButton.styleFrom(
                       backgroundColor: context.colorScheme.primaryContainer.withOpacity(0.4),
+                      alignment: Alignment.center,
+                      fixedSize: Size(36, 36),
+                      padding: EdgeInsets.zero,
                     ),
                     onPressed: () {
                       _handleChangeType(
@@ -754,13 +757,17 @@ class RuleContent extends ConsumerWidget {
                     child: !isEdit
                         ? ReorderableDragStartListener(
                             index: index,
-                            child: Container(
-                              padding: EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: context.colorScheme.surfaceVariant.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(8),
+                            child: Center(
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: context.colorScheme.surfaceVariant.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.drag_handle, size: 18),
                               ),
-                              child: const Icon(Icons.drag_handle, size: 20),
                             ),
                           )
                         : CommonCheckBox(
