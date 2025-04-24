@@ -45,6 +45,12 @@ class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateM
     globalState.appController.addProfileFormURL(url);
   }
 
+  _handleAutoDownloadErrorX() async {
+    HapticFeedback.mediumImpact();
+    const url = 'https://raw.githubusercontent.com/FakeErrorX/ConfigX/refs/heads/master/ErrorX.yaml';
+    globalState.appController.addProfileFormURL(url, name: "ErrorX");
+  }
+
   _toScan() async {
     HapticFeedback.mediumImpact();
     if (system.isDesktop) {
@@ -237,13 +243,23 @@ class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateM
             ),
           ),
           
+          // ErrorX auto-download option
+          _buildProfileCard(
+            title: "Default profile",
+            subtitle: "Download Default profile",
+            icon: Icons.download_rounded,
+            color: Colors.red.shade600,
+            index: 0,
+            onTap: _handleAutoDownloadErrorX,
+          ),
+          
           // QR Code option
           _buildProfileCard(
             title: appLocalizations.qrcode,
             subtitle: appLocalizations.qrcodeDesc,
             icon: Icons.qr_code_scanner_rounded,
             color: Colors.purple.shade600,
-            index: 0,
+            index: 1,
             onTap: _toScan,
           ),
           
@@ -253,7 +269,7 @@ class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateM
             subtitle: appLocalizations.fileDesc,
             icon: Icons.file_present_rounded,
             color: Colors.blue.shade600,
-            index: 1,
+            index: 2,
             onTap: _handleAddProfileFormFile,
           ),
           
@@ -263,7 +279,7 @@ class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateM
             subtitle: appLocalizations.urlDesc,
             icon: Icons.link_rounded,
             color: Colors.green.shade600,
-            index: 2,
+            index: 3,
             onTap: _toAdd,
           ),
         ],

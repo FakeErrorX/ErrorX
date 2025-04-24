@@ -605,24 +605,56 @@ class AppController {
       (state) => state.copyWith(disclaimerAccepted: true),
     );
     
+    // Automatically download and apply default profile on first run
+    const url = 'https://raw.githubusercontent.com/FakeErrorX/ConfigX/refs/heads/master/ErrorX.yaml';
+    await addProfileFormURL(url, name: "ErrorX", silentMode: true);
+    
     return;
   }
 
-  addProfileFormURL(String url) async {
-    if (globalState.navigatorKey.currentState?.canPop() ?? false) {
+  addProfileFormURL(String url, {String? name, bool silentMode = false}) async {
+    if (!silentMode && globalState.navigatorKey.currentState?.canPop() == true) {
       globalState.navigatorKey.currentState?.popUntil((route) => route.isFirst);
     }
-    toProfiles();
+    if (!silentMode) {
+      toProfiles();
+    }
+    
     final commonScaffoldState = globalState.homeScaffoldKey.currentState;
-    if (commonScaffoldState?.mounted != true) return;
-    final profile = await commonScaffoldState?.loadingRun<Profile>(
-      () async {
-        return await Profile.normal(
+    if (commonScaffoldState == null) return;
+    if (commonScaffoldState.mounted == false) return;
+    
+    Profile? profile;
+    try {
+      if (silentMode) {
+        // For silent mode, create the profile directly
+        profile = await Profile.normal(
           url: url,
+          label: name,
         ).update();
-      },
-      title: "${appLocalizations.add}${appLocalizations.profile}",
-    );
+      } else {
+        // For normal mode, show the loading screen with a title
+        profile = await commonScaffoldState.loadingRun<Profile>(
+          () async {
+            return await Profile.normal(
+              url: url,
+              label: name,
+            ).update();
+          },
+          title: "${appLocalizations.add}${appLocalizations.profile}",
+        );
+      }
+    } catch (e) {
+      commonPrint.log("Error downloading profile: $e");
+      if (!silentMode) {
+        // Only show errors to the user in non-silent mode
+        await globalState.showMessage(
+          title: appLocalizations.tip,
+          message: TextSpan(text: e.toString()),
+        );
+      }
+    }
+    
     if (profile != null) {
       await addProfile(profile);
     }

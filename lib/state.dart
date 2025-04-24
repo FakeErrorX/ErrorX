@@ -62,6 +62,10 @@ class GlobalState {
     config = await preferences.getConfig() ??
         Config(
           themeProps: defaultThemeProps,
+          patchClashConfig: ClashConfig(
+            findProcessMode: FindProcessMode.always,
+            externalController: ExternalControllerStatus.open,
+          ),
         );
     await globalState.migrateOldData(config);
     await AppLocalizations.load(
