@@ -9,6 +9,7 @@ import 'package:errorx/state.dart';
 import 'package:errorx/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:errorx/widgets/scroll.dart';
 
 class OverrideProfile extends StatefulWidget {
   final String profileId;
@@ -22,10 +23,27 @@ class OverrideProfile extends StatefulWidget {
   State<OverrideProfile> createState() => _OverrideProfileState();
 }
 
-class _OverrideProfileState extends State<OverrideProfile> {
+class _OverrideProfileState extends State<OverrideProfile> with SingleTickerProviderStateMixin {
   final GlobalKey<CacheItemExtentListViewState> _ruleListKey = GlobalKey();
   final _controller = ScrollController();
   double _currentMaxWidth = 0;
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   _initState(WidgetRef ref) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -126,10 +144,78 @@ class _OverrideProfileState extends State<OverrideProfile> {
                     height: 16,
                   ),
                 ),
+                // Header section with animations
+                SliverToBoxAdapter(
+                  child: FadeTransition(
+                    opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(
+                        parent: _animationController,
+                        curve: Interval(0.0, 0.4, curve: Curves.easeOut),
+                      ),
+                    ),
+                    child: SlideTransition(
+                      position: Tween<Offset>(begin: Offset(0, -0.2), end: Offset.zero).animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: Interval(0.0, 0.4, curve: Curves.easeOutCubic),
+                        ),
+                      ),
+                      child: Container(
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: context.colorScheme.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.rule_folder_rounded,
+                              size: 48,
+                              color: context.colorScheme.primary,
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              appLocalizations.override,
+                              style: context.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: context.colorScheme.primary,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              "Customize your profile rules",
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverToBoxAdapter(
-                    child: OverrideSwitch(),
+                    child: SlideTransition(
+                      position: Tween<Offset>(begin: Offset(0.3, 0), end: Offset.zero).animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: Interval(0.2, 0.6, curve: Curves.easeOutBack),
+                        ),
+                      ),
+                      child: FadeTransition(
+                        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: _animationController,
+                            curve: Interval(0.2, 0.6, curve: Curves.easeOut),
+                          ),
+                        ),
+                        child: OverrideSwitch(),
+                      ),
+                    ),
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -138,8 +224,24 @@ class _OverrideProfileState extends State<OverrideProfile> {
                       left: 8,
                       right: 8,
                     ),
-                    child: RuleTitle(
-                      profileId: widget.profileId,
+                    child: SlideTransition(
+                      position: Tween<Offset>(begin: Offset(0.3, 0), end: Offset.zero).animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: Interval(0.3, 0.7, curve: Curves.easeOutBack),
+                        ),
+                      ),
+                      child: FadeTransition(
+                        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: _animationController,
+                            curve: Interval(0.3, 0.7, curve: Curves.easeOut),
+                          ),
+                        ),
+                        child: RuleTitle(
+                          profileId: widget.profileId,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -148,6 +250,7 @@ class _OverrideProfileState extends State<OverrideProfile> {
                   sliver: RuleContent(
                     maxWidth: _currentMaxWidth,
                     ruleListKey: _ruleListKey,
+                    animationController: _animationController,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -305,27 +408,72 @@ class OverrideSwitch extends ConsumerWidget {
         (state) => state.overrideData?.enable,
       ),
     );
-    return CommonCard(
-      onPressed: () {},
-      type: CommonCardType.filled,
-      radius: 18,
-      child: ListItem.switchItem(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 4,
-          bottom: 4,
-        ),
-        title: Text(appLocalizations.enableOverride),
-        delegate: SwitchDelegate(
-          value: enable ?? false,
-          onChanged: (value) {
-            ref.read(profileOverrideStateProvider.notifier).updateState(
-                  (state) => state.copyWith.overrideData!(
-                    enable: value,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withOpacity(0.06),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: enable == true 
+                    ? context.colorScheme.primary.withOpacity(0.1)
+                    : context.colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.toggle_on_rounded,
+                color: enable == true 
+                    ? context.colorScheme.primary
+                    : context.colorScheme.onSurfaceVariant,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appLocalizations.enableOverride,
+                    style: context.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                );
-          },
+                  const SizedBox(height: 4),
+                  Text(
+                    "Apply custom rule modifications",
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: enable ?? false,
+              onChanged: (value) {
+                ref.read(profileOverrideStateProvider.notifier).updateState(
+                      (state) => state.copyWith.overrideData!(
+                        enable: value,
+                      ),
+                    );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -369,77 +517,145 @@ class RuleTitle extends ConsumerWidget {
     final isEdit = vm3.a;
     final isSelectAll = vm3.b;
     final isOverrideRule = vm3.c;
-    return FilledButtonTheme(
-      data: FilledButtonThemeData(
-        style: ButtonStyle(
-          padding: WidgetStatePropertyAll(EdgeInsets.symmetric(
-            horizontal: 8,
-          )),
-          visualDensity: VisualDensity.compact,
-        ),
-      ),
-      child: IconButtonTheme(
-        data: IconButtonThemeData(
-          style: ButtonStyle(
-            padding: WidgetStatePropertyAll(EdgeInsets.zero),
-            visualDensity: VisualDensity.compact,
-            iconSize: WidgetStatePropertyAll(20),
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withOpacity(0.06),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
           ),
-        ),
-        child: ListHeader(
-          title: appLocalizations.rule,
-          subTitle: isOverrideRule
-              ? appLocalizations.overrideOriginRules
-              : appLocalizations.addedOriginRules,
-          space: 8,
-          actions: [
-            if (!isEdit)
-              IconButton.filledTonal(
-                icon: Icon(
-                  isOverrideRule ? Icons.edit_document : Icons.note_add,
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isOverrideRule ? Icons.edit_document : Icons.note_add,
+                    color: context.colorScheme.secondary,
+                    size: 24,
+                  ),
                 ),
-                onPressed: () {
-                  _handleChangeType(
-                    ref,
-                    isOverrideRule,
-                  );
-                },
-              ),
-            !isEdit
-                ? FilledButton.tonal(
-                    onPressed: () {
-                      globalState.appController.handleAddOrUpdate(ref);
-                    },
-                    child: Text(appLocalizations.add),
-                  )
-                : isSelectAll
-                    ? FilledButton(
-                        onPressed: () {
-                          ref
-                              .read(profileOverrideStateProvider.notifier)
-                              .updateState(
-                                (state) => state.copyWith(
-                                  selectedRules: {},
-                                ),
-                              );
-                        },
-                        child: Text(appLocalizations.selectAll),
-                      )
-                    : FilledButton.tonal(
-                        onPressed: () {
-                          ref
-                              .read(profileOverrideStateProvider.notifier)
-                              .updateState(
-                                (state) => state.copyWith(
-                                  selectedRules: state.overrideData?.rule.rules
-                                          .map((item) => item.id)
-                                          .toSet() ??
-                                      {},
-                                ),
-                              );
-                        },
-                        child: Text(appLocalizations.selectAll),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appLocalizations.rule,
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isOverrideRule
+                            ? appLocalizations.overrideOriginRules
+                            : appLocalizations.addedOriginRules,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isEdit)
+                  IconButton(
+                    icon: Icon(
+                      isOverrideRule ? Icons.edit_document : Icons.note_add,
+                      color: context.colorScheme.primary,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: context.colorScheme.primaryContainer.withOpacity(0.4),
+                    ),
+                    onPressed: () {
+                      _handleChangeType(
+                        ref,
+                        isOverrideRule,
+                      );
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                !isEdit
+                    ? FilledButton.icon(
+                        onPressed: () {
+                          globalState.appController.handleAddOrUpdate(ref);
+                        },
+                        icon: Icon(Icons.add_rounded),
+                        label: Text(appLocalizations.add),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: context.colorScheme.primary,
+                          foregroundColor: context.colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      )
+                    : isSelectAll
+                        ? FilledButton.icon(
+                            onPressed: () {
+                              ref
+                                  .read(profileOverrideStateProvider.notifier)
+                                  .updateState(
+                                    (state) => state.copyWith(
+                                      selectedRules: {},
+                                    ),
+                                  );
+                            },
+                            icon: Icon(Icons.deselect_rounded),
+                            label: Text(appLocalizations.selectAll),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: context.colorScheme.primary,
+                              foregroundColor: context.colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          )
+                        : FilledButton.icon(
+                            onPressed: () {
+                              ref
+                                  .read(profileOverrideStateProvider.notifier)
+                                  .updateState(
+                                    (state) => state.copyWith(
+                                      selectedRules: state.overrideData?.rule.rules
+                                              .map((item) => item.id)
+                                              .toSet() ??
+                                          {},
+                                    ),
+                                  );
+                            },
+                            icon: Icon(Icons.select_all_rounded),
+                            label: Text(appLocalizations.selectAll),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: context.colorScheme.secondary,
+                              foregroundColor: context.colorScheme.onSecondary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+              ],
+            ),
           ],
         ),
       ),
@@ -450,11 +666,13 @@ class RuleTitle extends ConsumerWidget {
 class RuleContent extends ConsumerWidget {
   final Key ruleListKey;
   final double maxWidth;
+  final AnimationController animationController;
 
   const RuleContent({
     super.key,
     required this.ruleListKey,
     required this.maxWidth,
+    required this.animationController,
   });
 
   Widget _proxyDecorator(
@@ -476,7 +694,7 @@ class RuleContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildItem(Rule rule, int index) {
+  Widget _buildItem(BuildContext context, Rule rule, int index) {
     return Consumer(
       builder: (context, ref, ___) {
         final vm2 = ref.watch(profileOverrideStateProvider.select(
@@ -488,45 +706,74 @@ class RuleContent extends ConsumerWidget {
         final isEdit = vm2.a;
         final isSelected = vm2.b;
 
-        return Material(
-          color: Colors.transparent,
-          child: Container(
-            margin: EdgeInsets.symmetric(
-              vertical: 4,
-            ),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? context.colorScheme.secondaryContainer.opacity80
-                  : context.colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            clipBehavior: Clip.hardEdge,
-            child: ListTile(
-              minTileHeight: 0,
-              minVerticalPadding: 0,
-              titleTextStyle: context.textTheme.bodyMedium?.toJetBrainsMono,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
+        final animation = CurvedAnimation(
+          parent: animationController,
+          curve: Interval(0.4 + (index * 0.05 > 0.8 ? 0.8 : index * 0.05), 
+                          0.8 + (index * 0.05 > 0.8 ? 0.8 : index * 0.05), 
+                          curve: Curves.easeOutQuad),
+        );
+
+        return SlideTransition(
+          position: Tween<Offset>(begin: Offset(0, 0.2), end: Offset.zero).animate(animation),
+          child: FadeTransition(
+            opacity: Tween<double>(begin: 0, end: 1.0).animate(animation),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                margin: EdgeInsets.symmetric(vertical: 6),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? context.colorScheme.secondaryContainer
+                      : context.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.colorScheme.shadow.withOpacity(0.05),
+                      blurRadius: 8,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: ListTile(
+                  minTileHeight: 0,
+                  minVerticalPadding: 0,
+                  titleTextStyle: context.textTheme.bodyMedium?.copyWith(
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w500,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  trailing: SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: !isEdit
+                        ? ReorderableDragStartListener(
+                            index: index,
+                            child: Container(
+                              padding: EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: context.colorScheme.surfaceVariant.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.drag_handle, size: 20),
+                            ),
+                          )
+                        : CommonCheckBox(
+                            value: isSelected,
+                            isCircle: true,
+                            onChanged: (_) {
+                              _handleSelect(ref, rule.id);
+                            },
+                          ),
+                  ),
+                  title: Text(rule.value),
+                ),
               ),
-              trailing: SizedBox(
-                width: 24,
-                height: 24,
-                child: !isEdit
-                    ? ReorderableDragStartListener(
-                        index: index,
-                        child: const Icon(Icons.drag_handle),
-                      )
-                    : CommonCheckBox(
-                        value: isSelected,
-                        isCircle: true,
-                        onChanged: (_) {
-                          _handleSelect(ref, rule);
-                        },
-                      ),
-              ),
-              title: Text(rule.value),
             ),
           ),
         );
@@ -568,34 +815,79 @@ class RuleContent extends ConsumerWidget {
     );
     final rules = vm2.a;
     final type = vm2.b;
+    
     if (rules.isEmpty) {
       return SliverToBoxAdapter(
-        child: SizedBox(
+        child: Container(
           height: 300,
+          margin: EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: context.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.colorScheme.shadow.withOpacity(0.05),
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Center(
-            child: type == OverrideRuleType.added
-                ? Text(
-                    appLocalizations.noData,
-                  )
-                : FilledButton(
-                    onPressed: () {
-                      final rules = ref.read(
-                        profileOverrideStateProvider.select(
-                          (state) => state.snippet?.rule ?? [],
+            child: FadeTransition(
+              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+                CurvedAnimation(
+                  parent: animationController,
+                  curve: Interval(0.5, 0.9, curve: Curves.easeOut),
+                ),
+              ),
+              child: type == OverrideRuleType.added
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.inbox_rounded,
+                          size: 48,
+                          color: context.colorScheme.onSurfaceVariant.withOpacity(0.5),
                         ),
-                      );
-                      ref
-                          .read(profileOverrideStateProvider.notifier)
-                          .updateState(
-                        (state) {
-                          return state.copyWith.overrideData!.rule(
-                            overrideRules: rules,
-                          );
-                        },
-                      );
-                    },
-                    child: Text(appLocalizations.getOriginRules),
-                  ),
+                        SizedBox(height: 16),
+                        Text(
+                          appLocalizations.noData,
+                          style: context.textTheme.titleMedium?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    )
+                  : FilledButton.icon(
+                      onPressed: () {
+                        final rules = ref.read(
+                          profileOverrideStateProvider.select(
+                            (state) => state.snippet?.rule ?? [],
+                          ),
+                        );
+                        ref
+                            .read(profileOverrideStateProvider.notifier)
+                            .updateState(
+                          (state) {
+                            return state.copyWith.overrideData!.rule(
+                              overrideRules: rules,
+                            );
+                          },
+                        );
+                      },
+                      icon: Icon(Icons.file_download_rounded),
+                      label: Text(appLocalizations.getOriginRules),
+                      style: FilledButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        backgroundColor: context.colorScheme.primary,
+                        foregroundColor: context.colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+            ),
           ),
         ),
       );
@@ -607,6 +899,7 @@ class RuleContent extends ConsumerWidget {
         return GestureDetector(
           key: ObjectKey(rule),
           child: _buildItem(
+            context,
             rule,
             index,
           ),
