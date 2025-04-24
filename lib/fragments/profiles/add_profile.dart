@@ -3,8 +3,9 @@ import 'package:errorx/pages/scan.dart';
 import 'package:errorx/state.dart';
 import 'package:errorx/widgets/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class AddProfile extends StatelessWidget {
+class AddProfile extends StatefulWidget {
   final BuildContext context;
 
   const AddProfile({
@@ -12,7 +13,31 @@ class AddProfile extends StatelessWidget {
     required this.context,
   });
 
+  @override
+  State<AddProfile> createState() => _AddProfileState();
+}
+
+class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _animationController.forward();
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   _handleAddProfileFormFile() async {
+    HapticFeedback.mediumImpact();
     globalState.appController.addProfileFormFile();
   }
 
@@ -21,12 +46,13 @@ class AddProfile extends StatelessWidget {
   }
 
   _toScan() async {
+    HapticFeedback.mediumImpact();
     if (system.isDesktop) {
       globalState.appController.addProfileFormQrCode();
       return;
     }
     final url = await BaseNavigator.push(
-      context,
+      widget.context,
       const ScanPage(),
     );
     if (url != null) {
@@ -37,6 +63,7 @@ class AddProfile extends StatelessWidget {
   }
 
   _toAdd() async {
+    HapticFeedback.mediumImpact();
     final url = await globalState.showCommonDialog<String>(
       child: const URLFormDialog(),
     );
@@ -45,29 +72,202 @@ class AddProfile extends StatelessWidget {
     }
   }
 
+  Widget _buildProfileCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    int index = 0,
+  }) {
+    // Calculate proper animation timing based on index
+    final double start = 0.1 * index;
+    final double end = 0.2 + (0.1 * index);
+    
+    final animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Interval(start, end, curve: Curves.easeOutBack),
+    );
+    
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0.3, 0),
+        end: Offset.zero,
+      ).animate(animation),
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0, end: 1).animate(animation),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          decoration: BoxDecoration(
+            color: context.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.colorScheme.shadow.withOpacity(0.08),
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              splashColor: color.withOpacity(0.1),
+              highlightColor: color.withOpacity(0.05),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Hero(
+                      tag: 'profile_icon_$index',
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: color,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: context.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: color.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(context) {
-    return ListView(
-      children: [
-        ListItem(
-          leading: const Icon(Icons.qr_code_sharp),
-          title: Text(appLocalizations.qrcode),
-          subtitle: Text(appLocalizations.qrcodeDesc),
-          onTap: _toScan,
+  Widget build(BuildContext context) {
+    // Header animation
+    final headerAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.3, curve: Curves.easeOutQuint),
+    );
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.colorScheme.background,
+            context.colorScheme.surface,
+          ],
+          stops: const [0.0, 1.0],
         ),
-        ListItem(
-          leading: const Icon(Icons.upload_file_sharp),
-          title: Text(appLocalizations.file),
-          subtitle: Text(appLocalizations.fileDesc),
-          onTap: _handleAddProfileFormFile,
-        ),
-        ListItem(
-          leading: const Icon(Icons.cloud_download_sharp),
-          title: Text(appLocalizations.url),
-          subtitle: Text(appLocalizations.urlDesc),
-          onTap: _toAdd,
-        )
-      ],
+      ),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        children: [
+          // Animated header
+          FadeTransition(
+            opacity: Tween<double>(begin: 0, end: 1).animate(headerAnimation),
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, -0.2), end: Offset.zero).animate(headerAnimation),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 48,
+                      color: context.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Add Profile",
+                      style: context.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: context.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Choose a method to add a new profile",
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // QR Code option
+          _buildProfileCard(
+            title: appLocalizations.qrcode,
+            subtitle: appLocalizations.qrcodeDesc,
+            icon: Icons.qr_code_scanner_rounded,
+            color: Colors.purple.shade600,
+            index: 0,
+            onTap: _toScan,
+          ),
+          
+          // File option
+          _buildProfileCard(
+            title: appLocalizations.file,
+            subtitle: appLocalizations.fileDesc,
+            icon: Icons.file_present_rounded,
+            color: Colors.blue.shade600,
+            index: 1,
+            onTap: _handleAddProfileFormFile,
+          ),
+          
+          // URL option
+          _buildProfileCard(
+            title: appLocalizations.url,
+            subtitle: appLocalizations.urlDesc,
+            icon: Icons.link_rounded,
+            color: Colors.green.shade600,
+            index: 2,
+            onTap: _toAdd,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -108,8 +308,24 @@ class _URLFormDialogState extends State<URLFormDialog> {
               minLines: 1,
               controller: urlController,
               decoration: InputDecoration(
-                border: const OutlineInputBorder(),
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  borderSide: BorderSide(
+                    color: context.colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                prefixIcon: Icon(
+                  Icons.link_rounded,
+                  color: context.colorScheme.primary,
+                ),
                 labelText: appLocalizations.url,
+                hintText: "https://",
+                filled: true,
+                fillColor: context.colorScheme.surfaceVariant.withOpacity(0.2),
               ),
             ),
           ],
