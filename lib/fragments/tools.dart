@@ -13,7 +13,6 @@ import 'package:errorx/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'backup_and_recovery.dart';
 import 'theme.dart';
 import 'package:path/path.dart' show dirname, join;
 import 'package:url_launcher/url_launcher.dart';
@@ -70,7 +69,6 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> {
       title: appLocalizations.settings,
       items: [
         _ThemeItem(),
-        _BackupItem(),
         if (system.isDesktop) _HotkeyItem(),
         if (Platform.isWindows) _LoopbackItem(),
         if (Platform.isAndroid) _AccessItem(),
@@ -120,23 +118,6 @@ class _ThemeItem extends StatelessWidget {
       delegate: OpenDelegate(
         title: appLocalizations.theme,
         widget: const ThemeFragment(),
-      ),
-    );
-  }
-}
-
-class _BackupItem extends StatelessWidget {
-  const _BackupItem();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListItem.open(
-      leading: const Icon(Icons.cloud_sync),
-      title: Text(appLocalizations.backupAndRecovery),
-      subtitle: Text(appLocalizations.backupAndRecoveryDesc),
-      delegate: OpenDelegate(
-        title: appLocalizations.backupAndRecovery,
-        widget: const BackupAndRecovery(),
       ),
     );
   }
