@@ -396,31 +396,6 @@ class _ApplicationSettingFragmentState extends State<ApplicationSettingFragment>
             },
           ),
           
-          // Logcat setting
-          Consumer(
-            builder: (context, ref, _) {
-              final openLogs = ref.watch(
-                appSettingProvider.select((state) => state.openLogs),
-              );
-              return ModernSettingCard(
-                title: appLocalizations.logcat,
-                subtitle: appLocalizations.logcatDesc,
-                value: openLogs,
-                onChanged: (value) {
-                  ref.read(appSettingProvider.notifier).updateState(
-                    (state) => state.copyWith(openLogs: value),
-                  );
-                },
-                icon: Icons.terminal_rounded,
-                color: Colors.deepPurple.shade600,
-                animation: CurvedAnimation(
-                  parent: _animationController,
-                  curve: const Interval(0.48, 0.68, curve: Curves.easeOutBack),
-                ),
-              );
-            },
-          ),
-          
           // Close connections setting
           Consumer(
             builder: (context, ref, _) {

@@ -594,12 +594,12 @@ class _PrimaryColorItem extends ConsumerWidget {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              ref.read(themeSettingProvider.notifier).updateState(
-                                (state) => state.copyWith(
-                                  primaryColor: color?.toARGB32(),
-                                ),
-                              );
-                            },
+                ref.read(themeSettingProvider.notifier).updateState(
+                      (state) => state.copyWith(
+                        primaryColor: color?.toARGB32(),
+                      ),
+                    );
+              },
                             child: Container(
                               width: 44,
                               height: 44,
