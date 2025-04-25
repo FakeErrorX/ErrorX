@@ -83,9 +83,7 @@ class Navigation {
           ),
         ),
         description: "logsDesc",
-        modes: openLogs
-            ? [NavigationItemMode.desktop, NavigationItemMode.more]
-            : [],
+        modes: [],
       ),
       const NavigationItem(
         icon: Icon(Icons.construction),
