@@ -8,6 +8,7 @@ import 'package:errorx/fragments/config/config.dart';
 import 'package:errorx/fragments/hotkey.dart';
 import 'package:errorx/l10n/l10n.dart';
 import 'package:errorx/models/models.dart';
+import 'package:errorx/pages/login.dart';
 import 'package:errorx/providers/providers.dart';
 import 'package:errorx/state.dart';
 import 'package:errorx/widgets/widgets.dart';
@@ -17,6 +18,7 @@ import 'package:intl/intl.dart';
 import 'theme.dart';
 import 'package:path/path.dart' show dirname, join;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ToolsFragment extends ConsumerStatefulWidget {
   const ToolsFragment({super.key});
@@ -223,6 +225,37 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
             title: appLocalizations.about,
             widget: const AboutFragment(),
           ),
+        ),
+        _ModernItem(
+          icon: Icons.logout_rounded,
+          iconColor: Colors.red.shade600,
+          title: "Logout",
+          subtitle: "Sign out from the application",
+          index: 2,
+          animationController: _animationController,
+          onTap: () async {
+            final confirm = await globalState.showMessage(
+              title: "Confirm Logout",
+              message: const TextSpan(text: "Are you sure you want to logout?"),
+              confirmText: "Logout",
+            );
+            
+            if (confirm == true) {
+              // Clear login state
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('isLoggedIn', false);
+              
+              // Return to login screen
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const LoginPage(),
+                  ),
+                  (route) => false,
+                );
+              }
+            }
+          },
         ),
       ],
       separated: false,

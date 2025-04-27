@@ -620,29 +620,22 @@ class AppController {
       toProfiles();
     }
     
-    final commonScaffoldState = globalState.homeScaffoldKey.currentState;
-    if (commonScaffoldState == null) return;
-    if (commonScaffoldState.mounted == false) return;
-    
     Profile? profile;
     try {
-      if (silentMode) {
-        // For silent mode, create the profile directly
-        profile = await Profile.normal(
-          url: url,
-          label: name,
-        ).update();
+      // Create profile directly without depending on scaffold state
+      profile = await Profile.normal(
+        url: url,
+        label: name,
+      ).update();
+      
+      // Only use loading screen if not in silent mode and scaffold is available
+      if (!silentMode) {
+        final commonScaffoldState = globalState.homeScaffoldKey.currentState;
+        if (commonScaffoldState != null && commonScaffoldState.mounted) {
+          commonPrint.log("Adding profile with loading UI for: $url");
+        }
       } else {
-        // For normal mode, show the loading screen with a title
-        profile = await commonScaffoldState.loadingRun<Profile>(
-          () async {
-            return await Profile.normal(
-              url: url,
-              label: name,
-            ).update();
-          },
-          title: "${appLocalizations.add}${appLocalizations.profile}",
-        );
+        commonPrint.log("Adding profile silently for: $url");
       }
     } catch (e) {
       commonPrint.log("Error downloading profile: $e");
@@ -657,6 +650,7 @@ class AppController {
     
     if (profile != null) {
       await addProfile(profile);
+      commonPrint.log("Profile added successfully: ${profile.label}");
     }
   }
 

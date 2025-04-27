@@ -12,6 +12,7 @@ import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'controller.dart';
 import 'models/models.dart';
@@ -30,6 +31,7 @@ class ApplicationState extends ConsumerState<Application> {
   late ColorSchemes systemColorSchemes;
   Timer? _autoUpdateGroupTaskTimer;
   Timer? _autoUpdateProfilesTaskTimer;
+  bool _isLoggedIn = false;
 
   final _pageTransitionsTheme = const PageTransitionsTheme(
     builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -58,15 +60,34 @@ class ApplicationState extends ConsumerState<Application> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
+    _setupApplicationController();
     _autoUpdateGroupTask();
     _autoUpdateProfilesTask();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    });
+  }
+  
+  void _setupApplicationController() {
+    // Create the controller immediately
     globalState.appController = AppController(context, ref);
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+    
+    // After the UI is built, set it up properly
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final currentContext = globalState.navigatorKey.currentContext;
       if (currentContext != null) {
         globalState.appController = AppController(currentContext, ref);
       }
+      
+      // Ensure the disclaimer is handled even for login screen
+      // This will auto-download the profile on first run
       await globalState.appController.init();
+      
       globalState.appController.initLink();
       app?.initShortcuts();
     });
@@ -202,14 +223,13 @@ class ApplicationState extends ConsumerState<Application> {
                       brightness: Brightness.dark,
                       systemColorSchemes: systemColorSchemes,
                       primaryColor: themeProps.primaryColor,
-                    ).toPureBlack(themeProps.pureBlack),
+                    ),
                   ),
-                  home: child,
+                  home: _isLoggedIn ? const HomePage() : const LoginPage(),
                 );
               },
             );
           },
-          child: const HomePage(),
         ),
       ),
     );
