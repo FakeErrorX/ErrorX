@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:errorx/common/common.dart';
 import 'package:errorx/fragments/about.dart';
 import 'package:errorx/fragments/access.dart';
+import 'package:errorx/fragments/account.dart';
 import 'package:errorx/fragments/application_setting.dart';
 import 'package:errorx/fragments/config/config.dart';
 import 'package:errorx/fragments/hotkey.dart';
@@ -267,11 +268,23 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
       title: appLocalizations.settings,
       items: [
         _ModernItem(
+          icon: Icons.account_circle_rounded,
+          iconColor: Colors.indigo.shade600,
+          title: "Account",
+          subtitle: "View license and subscription information",
+          index: 0,
+          animationController: _animationController,
+          delegate: OpenDelegate(
+            title: "Account",
+            widget: const AccountFragment(),
+          ),
+        ),
+        _ModernItem(
           icon: Icons.palette_rounded,
           iconColor: Colors.purple.shade600,
           title: appLocalizations.theme,
           subtitle: appLocalizations.themeDesc,
-          index: 0,
+          index: 1,
           animationController: _animationController,
           delegate: OpenDelegate(
             title: appLocalizations.theme,
@@ -284,7 +297,7 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
             iconColor: Colors.teal.shade600,
             title: appLocalizations.hotkeyManagement,
             subtitle: appLocalizations.hotkeyManagementDesc,
-            index: 1,
+            index: 2,
             animationController: _animationController,
             delegate: OpenDelegate(
               title: appLocalizations.hotkeyManagement,
@@ -297,7 +310,7 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
             iconColor: Colors.amber.shade800,
             title: appLocalizations.loopback,
             subtitle: appLocalizations.loopbackDesc,
-            index: 2,
+            index: 3,
             animationController: _animationController,
             onTap: () {
               windows?.runas(
@@ -312,7 +325,7 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
             iconColor: Colors.pink.shade600,
             title: appLocalizations.accessControl,
             subtitle: appLocalizations.accessControlDesc,
-            index: 3,
+            index: 4,
             animationController: _animationController,
             delegate: OpenDelegate(
               title: appLocalizations.appAccessControl,
@@ -324,7 +337,7 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
           iconColor: Colors.green.shade600,
           title: appLocalizations.basicConfig,
           subtitle: appLocalizations.basicConfigDesc,
-          index: 4,
+          index: 5,
           animationController: _animationController,
           delegate: OpenDelegate(
             title: appLocalizations.override,
@@ -336,7 +349,7 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
           iconColor: Colors.blue.shade600,
           title: appLocalizations.application,
           subtitle: appLocalizations.applicationDesc,
-          index: 5,
+          index: 6,
           animationController: _animationController,
           delegate: OpenDelegate(
             title: appLocalizations.application,
