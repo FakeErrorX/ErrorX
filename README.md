@@ -42,7 +42,7 @@
 </td>
 <td>
 
-### 💫 Advanced Features
+### ✨ Advanced Features
 - Custom Rules
 - Traffic Statistics
 - Profile Management
@@ -106,7 +106,7 @@ sudo apt-get install keybinder-3.0
 2. Build for your platform:
 
    <details>
-   <summary>🤖 Android Build</summary>
+   <summary>📲 Android Build</summary>
    
    Requirements:
    - Android SDK
