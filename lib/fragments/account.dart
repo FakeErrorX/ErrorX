@@ -5,6 +5,7 @@ import 'package:errorx/l10n/l10n.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:errorx/services/api_service.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui';
 import 'dart:math' as math;
@@ -22,14 +23,18 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
   late Animation<double> _slideAnimation;
   late Animation<double> _rotateAnimation;
   Timer? _refreshTimer;
+  final ApiService _apiService = ApiService();
   
-  // Subscription information
-  final String _licenseKey = "1MONTH-WIN-80D6-D233";
-  final String _subscriptionType = "1MONTH";
-  final DateTime _startDate = DateTime(2025, 4, 21, 16, 35, 58);
-  final DateTime _expiryDate = DateTime(2025, 5, 21, 16, 35, 58);
-  String _remainingTime = "";
-  final String _platform = "windows";
+  // License information
+  String _licenseKey = "";
+  String _subscriptionType = "";
+  DateTime? _startDate;
+  DateTime? _expiryDate;
+  String _remainingTime = "Loading...";
+  String _platform = "";
+  bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = "";
 
   @override
   void initState() {
@@ -60,7 +65,8 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
       ),
     );
     
-    _updateRemainingTime();
+    _loadLicenseInfo();
+    
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateRemainingTime();
     });
@@ -68,10 +74,104 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
     _animationController.forward();
   }
   
+  Future<void> _loadLicenseInfo() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+      });
+      
+      // Request license status
+      _apiService.requestLicenseStatus();
+      
+      // Wait a moment for the response
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Get license data from API service
+      final licenseStatus = _apiService.getLicenseStatus();
+      final storedLicenseKey = _apiService.getLicenseKey() ?? await _apiService.getStoredLicenseKey();
+      
+      if (licenseStatus == null) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = "Failed to retrieve license information";
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      if (licenseStatus['status'] != 'success') {
+        setState(() {
+          _hasError = true;
+          _errorMessage = licenseStatus['message'] ?? "Invalid license status";
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      final data = licenseStatus['data'];
+      if (data == null) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = "No license data available";
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // License Key
+      _licenseKey = storedLicenseKey ?? data['license_key'] ?? "Unknown";
+      
+      // Parse subscription information
+      final subscriptionInfo = data['subscription_info'];
+      if (subscriptionInfo != null) {
+        _subscriptionType = subscriptionInfo['name'] ?? subscriptionInfo['type'] ?? "Unknown";
+        
+        // Parse dates
+        try {
+          if (subscriptionInfo['start_time'] != null) {
+            _startDate = DateTime.parse(subscriptionInfo['start_time']);
+          }
+          
+          if (subscriptionInfo['expiry_time'] != null) {
+            _expiryDate = DateTime.parse(subscriptionInfo['expiry_time']);
+          }
+        } catch (e) {
+          commonPrint.log('Error parsing dates: $e');
+        }
+      }
+      
+      // Platform
+      _platform = data['allowed_platform'] ?? "Unknown";
+      
+      // Update remaining time
+      _updateRemainingTime();
+      
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      commonPrint.log('Error loading license info: $e');
+      setState(() {
+        _hasError = true;
+        _errorMessage = "Failed to load license information: $e";
+        _isLoading = false;
+      });
+    }
+  }
+  
   void _updateRemainingTime() {
-    final now = DateTime.now();
-    if (_expiryDate.isAfter(now)) {
-      final difference = _expiryDate.difference(now);
+    if (_expiryDate == null) {
+      setState(() {
+        _remainingTime = "Unknown";
+      });
+      return;
+    }
+    
+    // Get current time in UTC
+    final now = DateTime.now().toUtc();
+    if (_expiryDate!.isAfter(now)) {
+      final difference = _expiryDate!.difference(now);
       setState(() {
         _remainingTime = "${difference.inDays}d ${difference.inHours % 24}h ${difference.inMinutes % 60}m ${difference.inSeconds % 60}s";
       });
@@ -92,6 +192,46 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error Loading License Information',
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Text(
+                _errorMessage,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadLicenseInfo,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
     
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -261,9 +401,9 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
                                     width: 1,
                                   ),
                                 ),
-                                child: const Text(
-                                  "1MONTH Subscription",
-                                  style: TextStyle(
+                                child: Text(
+                                  "$_subscriptionType Subscription",
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
@@ -338,6 +478,20 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
   }
   
   List<Widget> _buildInfoCards(ThemeData theme) {
+    // Use a date format that displays in local time with timezone
+    final dateFormat = DateFormat('MMM dd, yyyy h:mm:ss a');
+    
+    // Function to format UTC date to local time
+    String formatLocalTime(DateTime? utcDate) {
+      if (utcDate == null) return "Unknown";
+      
+      // Convert UTC time to local time
+      final localDate = utcDate.toLocal();
+      
+      // Format without timezone name
+      return dateFormat.format(localDate);
+    }
+    
     final items = [
       _LicenseInfoItem(
         icon: Icons.key_rounded,
@@ -359,7 +513,7 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
         icon: Icons.play_circle_rounded,
         iconColor: Colors.green,
         title: "Start Date",
-        value: DateFormat('MMM dd, yyyy h:mm:ss a').format(_startDate),
+        value: formatLocalTime(_startDate),
         index: 2,
         animationController: _animationController,
       ),
@@ -367,7 +521,7 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
         icon: Icons.event_rounded,
         iconColor: Colors.red,
         title: "Expiry Date",
-        value: DateFormat('MMM dd, yyyy h:mm:ss a').format(_expiryDate),
+        value: formatLocalTime(_expiryDate),
         index: 3,
         animationController: _animationController,
       ),

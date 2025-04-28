@@ -11,6 +11,7 @@ import 'package:errorx/l10n/l10n.dart';
 import 'package:errorx/models/models.dart';
 import 'package:errorx/pages/login.dart';
 import 'package:errorx/providers/providers.dart';
+import 'package:errorx/services/api_service.dart';
 import 'package:errorx/state.dart';
 import 'package:errorx/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,7 @@ class ToolsFragment extends ConsumerStatefulWidget {
 
 class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
+  final ApiService _apiService = ApiService();
   
   @override
   void initState() {
@@ -39,6 +41,28 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
       duration: const Duration(milliseconds: 300),
     );
     _animationController.forward();
+    
+    // Setup logout callback
+    _apiService.setLogoutCallback((reason) {
+      if (mounted) {
+        // If reason is empty, it's a manual logout, don't show notification
+        if (reason.isNotEmpty) {
+          // Show notification for non-manual logout
+          globalState.showMessage(
+            title: "Session Ended",
+            message: TextSpan(text: reason),
+          );
+        }
+        
+        // Return to login screen
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const LoginPage(),
+          ),
+          (route) => false,
+        );
+      }
+    });
   }
   
   @override
@@ -242,19 +266,9 @@ class _ToolboxFragmentState extends ConsumerState<ToolsFragment> with SingleTick
             );
             
             if (confirm == true) {
-              // Clear login state
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('isLoggedIn', false);
-              
-              // Return to login screen
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const LoginPage(),
-                  ),
-                  (route) => false,
-                );
-              }
+              // Instead of using showLoading/hideLoading, just call logout
+              // The navigation will be handled by the logout callback
+              await _apiService.logout();
             }
           },
         ),

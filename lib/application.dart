@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:errorx/clash/clash.dart';
@@ -8,6 +9,8 @@ import 'package:errorx/manager/hotkey_manager.dart';
 import 'package:errorx/manager/manager.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/providers/config.dart';
+import 'package:errorx/services/api_service.dart';
+import 'package:errorx/services/background_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -27,11 +30,13 @@ class Application extends ConsumerStatefulWidget {
   ConsumerState<Application> createState() => ApplicationState();
 }
 
-class ApplicationState extends ConsumerState<Application> {
+class ApplicationState extends ConsumerState<Application> with WidgetsBindingObserver {
   late ColorSchemes systemColorSchemes;
   Timer? _autoUpdateGroupTaskTimer;
   Timer? _autoUpdateProfilesTaskTimer;
+  Timer? _connectionCheckTimer;
   bool _isLoggedIn = false;
+  final ApiService _apiService = ApiService();
 
   final _pageTransitionsTheme = const PageTransitionsTheme(
     builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -60,16 +65,104 @@ class ApplicationState extends ConsumerState<Application> {
   @override
   void initState() {
     super.initState();
+    // Register as an observer to detect app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+    
     _checkLoginStatus();
     _setupApplicationController();
+    _setupApiService();
     _autoUpdateGroupTask();
     _autoUpdateProfilesTask();
+    _startConnectionCheck();
+    
+    // Initialize background services
+    _initializeBackgroundService();
   }
 
   Future<void> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    final savedLoginStatus = prefs.getBool('isLoggedIn') ?? false;
+    
+    if (savedLoginStatus) {
+      // Show loading state while validating license
+      setState(() {
+        _isLoggedIn = true; // Initially set to true to show home page with loading state
+      });
+      
+      // Attempt to validate the license with the server
+      final autoLoginSuccess = await _apiService.autoLogin();
+      
+      if (!autoLoginSuccess) {
+        // If license validation fails, update state and redirect to login
+        setState(() {
+          _isLoggedIn = false;
+        });
+        
+        // Ensure we're on the login page after auto-login fails
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final navigator = globalState.navigatorKey.currentState;
+          if (navigator != null) {
+            navigator.pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+              (route) => false,
+            );
+          }
+        });
+      }
+    } else {
+      setState(() {
+        _isLoggedIn = false;
+      });
+    }
+  }
+  
+  void _setupApiService() {
+    // Set up logout callback for the ApiService
+    _apiService.setLogoutCallback((reason) {
+      // When logout happens, update the UI
+      setState(() {
+        _isLoggedIn = false;
+      });
+      
+      // Ensure we navigate to login page
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navigator = globalState.navigatorKey.currentState;
+        if (navigator != null) {
+          // If we have a reason, show it to the user
+          if (reason.isNotEmpty) {
+            globalState.showMessage(
+              title: "Session Ended",
+              message: TextSpan(text: reason),
+            );
+          }
+          
+          // Navigate to login page
+          navigator.pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const LoginPage(),
+            ),
+            (route) => false,
+          );
+        }
+      });
+    });
+  }
+  
+  void _startConnectionCheck() {
+    // Periodically check if we're logged in but WebSocket is disconnected
+    _connectionCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      
+      if (isLoggedIn) {
+        // Check if WebSocket is properly connected
+        final licenseKey = await _apiService.getStoredLicenseKey();
+        if (licenseKey != null && licenseKey.isNotEmpty) {
+          // If we have a license key but no valid WebSocket connection,
+          // make sure to attempt reconnection or logout
+          _apiService.checkConnection();
+        }
+      }
     });
   }
   
@@ -235,11 +328,47 @@ class ApplicationState extends ConsumerState<Application> {
     );
   }
 
+  Future<void> _initializeBackgroundService() async {
+    if (Platform.isAndroid) {
+      // Only initialize background service on Android
+      await BackgroundService.initialize();
+    }
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // Handle app lifecycle changes
+    if (state == AppLifecycleState.resumed) {
+      // App is in the foreground
+      commonPrint.log('App resumed, checking WebSocket connection');
+      _apiService.checkAndReconnectWebSocket();
+      
+    } else if (state == AppLifecycleState.paused) {
+      // App is in the background
+      commonPrint.log('App paused, registering background tasks');
+      if (Platform.isAndroid) {
+        BackgroundService.registerKeepAliveTask();
+      }
+    }
+  }
+
   @override
   Future<void> dispose() async {
+    // Remove observer
+    WidgetsBinding.instance.removeObserver(this);
+    
     linkManager.destroy();
     _autoUpdateGroupTaskTimer?.cancel();
     _autoUpdateProfilesTaskTimer?.cancel();
+    _connectionCheckTimer?.cancel();
+    
+    // Cancel background tasks
+    if (Platform.isAndroid) {
+      await BackgroundService.cancelAllTasks();
+    }
+    
     await clashCore.destroy();
     await globalState.appController.savePreferences();
     await globalState.appController.handleExit();
