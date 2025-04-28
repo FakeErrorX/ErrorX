@@ -2,10 +2,8 @@ package net.errorx.vpn
 
 import android.app.Application
 import android.content.Context
-import androidx.work.Configuration
-import androidx.work.WorkManager
 
-class ErrorXApplication : Application(), Configuration.Provider {
+class ErrorXApplication : Application() {
     companion object {
         private lateinit var instance: ErrorXApplication
 
@@ -17,14 +15,5 @@ class ErrorXApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        
-        // Initialize WorkManager with custom configuration
-        WorkManager.initialize(this, workManagerConfiguration)
-    }
-    
-    override fun getWorkManagerConfiguration(): Configuration {
-        return Configuration.Builder()
-            .setMinimumLoggingLevel(android.util.Log.INFO)
-            .build()
     }
 } 
