@@ -23,7 +23,6 @@
 - 🔒 **Privacy First**: Open-source and completely ad-free
 - 🎨 **Modern UI**: Material You Design with Surfboard-like interface
 - 🌓 **Customizable**: Multiple color themes and dark mode support
-- ☁️ **Sync Ready**: WebDAV support for seamless data synchronization
 - 🔄 **Flexible**: Subscription link support
 - 📱 **Adaptive**: Optimized for all screen sizes
 
@@ -43,7 +42,7 @@
 </td>
 <td>
 
-### 💫 Advanced Features
+### ✨ Advanced Features
 - Custom Rules
 - Traffic Statistics
 - Profile Management
@@ -107,7 +106,7 @@ sudo apt-get install keybinder-3.0
 2. Build for your platform:
 
    <details>
-   <summary>🤖 Android Build</summary>
+   <summary>📲 Android Build</summary>
    
    Requirements:
    - Android SDK

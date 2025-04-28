@@ -8,10 +8,12 @@ import 'package:errorx/manager/hotkey_manager.dart';
 import 'package:errorx/manager/manager.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/providers/config.dart';
+import 'package:errorx/services/api_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'controller.dart';
 import 'models/models.dart';
@@ -30,6 +32,9 @@ class ApplicationState extends ConsumerState<Application> {
   late ColorSchemes systemColorSchemes;
   Timer? _autoUpdateGroupTaskTimer;
   Timer? _autoUpdateProfilesTaskTimer;
+  Timer? _connectionCheckTimer;
+  bool _isLoggedIn = false;
+  final ApiService _apiService = ApiService();
 
   final _pageTransitionsTheme = const PageTransitionsTheme(
     builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -58,15 +63,116 @@ class ApplicationState extends ConsumerState<Application> {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
+    _setupApplicationController();
+    _setupApiService();
     _autoUpdateGroupTask();
     _autoUpdateProfilesTask();
+    _startConnectionCheck();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLoginStatus = prefs.getBool('isLoggedIn') ?? false;
+    
+    if (savedLoginStatus) {
+      // Show loading state while validating license
+      setState(() {
+        _isLoggedIn = true; // Initially set to true to show home page with loading state
+      });
+      
+      // Attempt to validate the license with the server
+      final autoLoginSuccess = await _apiService.autoLogin();
+      
+      if (!autoLoginSuccess) {
+        // If license validation fails, update state and redirect to login
+        setState(() {
+          _isLoggedIn = false;
+        });
+        
+        // Ensure we're on the login page after auto-login fails
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final navigator = globalState.navigatorKey.currentState;
+          if (navigator != null) {
+            navigator.pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+              (route) => false,
+            );
+          }
+        });
+      }
+    } else {
+      setState(() {
+        _isLoggedIn = false;
+      });
+    }
+  }
+  
+  void _setupApiService() {
+    // Set up logout callback for the ApiService
+    _apiService.setLogoutCallback((reason) {
+      // When logout happens, update the UI
+      setState(() {
+        _isLoggedIn = false;
+      });
+      
+      // Ensure we navigate to login page
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navigator = globalState.navigatorKey.currentState;
+        if (navigator != null) {
+          // If we have a reason, show it to the user
+          if (reason.isNotEmpty) {
+            globalState.showMessage(
+              title: "Session Ended",
+              message: TextSpan(text: reason),
+            );
+          }
+          
+          // Navigate to login page
+          navigator.pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const LoginPage(),
+            ),
+            (route) => false,
+          );
+        }
+      });
+    });
+  }
+  
+  void _startConnectionCheck() {
+    // Periodically check if we're logged in but WebSocket is disconnected
+    _connectionCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      
+      if (isLoggedIn) {
+        // Check if WebSocket is properly connected
+        final licenseKey = await _apiService.getStoredLicenseKey();
+        if (licenseKey != null && licenseKey.isNotEmpty) {
+          // If we have a license key but no valid WebSocket connection,
+          // make sure to attempt reconnection or logout
+          _apiService.checkConnection();
+        }
+      }
+    });
+  }
+  
+  void _setupApplicationController() {
+    // Create the controller immediately
     globalState.appController = AppController(context, ref);
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+    
+    // After the UI is built, set it up properly
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final currentContext = globalState.navigatorKey.currentContext;
       if (currentContext != null) {
         globalState.appController = AppController(currentContext, ref);
       }
+      
+      // Ensure the disclaimer is handled even for login screen
+      // This will auto-download the profile on first run
       await globalState.appController.init();
+      
       globalState.appController.initLink();
       app?.initShortcuts();
     });
@@ -202,14 +308,13 @@ class ApplicationState extends ConsumerState<Application> {
                       brightness: Brightness.dark,
                       systemColorSchemes: systemColorSchemes,
                       primaryColor: themeProps.primaryColor,
-                    ).toPureBlack(themeProps.pureBlack),
+                    ),
                   ),
-                  home: child,
+                  home: _isLoggedIn ? const HomePage() : const LoginPage(),
                 );
               },
             );
           },
-          child: const HomePage(),
         ),
       ),
     );
@@ -220,6 +325,7 @@ class ApplicationState extends ConsumerState<Application> {
     linkManager.destroy();
     _autoUpdateGroupTaskTimer?.cancel();
     _autoUpdateProfilesTaskTimer?.cancel();
+    _connectionCheckTimer?.cancel();
     await clashCore.destroy();
     await globalState.appController.savePreferences();
     await globalState.appController.handleExit();
