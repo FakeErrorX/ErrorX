@@ -191,12 +191,12 @@ class CommonNavigationBar extends ConsumerWidget {
   Widget build(BuildContext context, ref) {
     if (viewMode == ViewMode.mobile) {
       return ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
-            height: 85,
-            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            height: 70,
+            padding: const EdgeInsets.only(top: 6, bottom: 4),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -206,7 +206,7 @@ class CommonNavigationBar extends ConsumerWidget {
                   context.colorScheme.surface.withOpacity(0.96),
                 ],
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               boxShadow: [
                 BoxShadow(
                   color: context.colorScheme.shadow.withOpacity(0.18),
@@ -258,8 +258,8 @@ class CommonNavigationBar extends ConsumerWidget {
                       )!;
                       
                       return SizedBox(
-                        height: 65,
-                        width: 56,
+                        height: 54,
+                        width: 48,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -276,7 +276,7 @@ class CommonNavigationBar extends ConsumerWidget {
                               ),
                               child: Material(
                                 color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(12),
                                 clipBehavior: Clip.antiAlias,
                                 child: InkWell(
                                   onTap: () {
@@ -287,20 +287,20 @@ class CommonNavigationBar extends ConsumerWidget {
                                   child: Ink(
                                     decoration: BoxDecoration(
                                       color: bgColor,
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: context.colorScheme.primary.withOpacity(0.05 + 0.15 * value),
                                         width: 1.5,
                                       ),
                                     ),
                                     child: Container(
-                                      width: 44,
-                                      height: 44,
+                                      width: 36,
+                                      height: 36,
                                       alignment: Alignment.center,
                                       child: Icon(
                                         (item.icon as Icon).icon,
                                         color: iconColor,
-                                        size: 22 + (2 * value),
+                                        size: 20 + (2 * value),
                                       ),
                                     ),
                                   ),
@@ -312,7 +312,7 @@ class CommonNavigationBar extends ConsumerWidget {
                             Text(
                               Intl.message(item.label.name),
                               style: context.textTheme.labelSmall!.copyWith(
-                                fontSize: 10,
+                                fontSize: 9,
                                 height: 1.0,
                                 letterSpacing: 0.2,
                                 color: textColor,
