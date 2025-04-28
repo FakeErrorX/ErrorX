@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:errorx/providers/config.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/enum/enum.dart';
+import 'package:errorx/services/api_service.dart';
 import 'dart:ui';
 import 'dart:math';
 
@@ -24,6 +25,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   String _errorMessage = '';
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -48,6 +50,51 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
     
     _animationController.forward();
+    
+    // Try auto-login
+    _checkAutoLogin();
+  }
+  
+  Future<void> _checkAutoLogin() async {
+    // Only try auto-login if we're not already authenticated
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    
+    if (isLoggedIn) {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      final success = await _apiService.autoLogin();
+      
+      if (success && mounted) {
+        // Complete the initialization process after successful login
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
+          
+          // Fully initialize the app after login
+          await globalState.appController.init();
+          
+          // Reset to home page navigation
+          globalState.appController.toPage(PageLabel.dashboard);
+        });
+        
+        // Navigate to home page
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const HomePage(),
+          ),
+          (route) => false,
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+          // Show error message if auto-login failed
+          _isError = true;
+          _errorMessage = 'Your session has expired. Please login again.';
+        });
+      }
+    }
   }
 
   @override
@@ -63,8 +110,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       _isError = false;
     });
 
-    await Future.delayed(const Duration(milliseconds: 800)); // Simulate network delay
-
     // Check if the license key field is empty
     if (_licenseController.text.trim().isEmpty) {
       setState(() {
@@ -75,10 +120,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       return;
     }
 
-    if (_licenseController.text.trim() == 'ErrorX') {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
-      
+    // Validate license through API
+    final result = await _apiService.login(_licenseController.text.trim());
+    
+    if (result['status'] == 'success') {
       // Complete the initialization process after successful login
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -92,17 +137,17 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       
       if (!mounted) return;
       
-      // Use pushAndRemoveUntil to clear the navigation stack completely
+      // Navigate to home page
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const HomePage(),
         ),
-        (route) => false, // This removes all previous routes
+        (route) => false,
       );
     } else {
       setState(() {
         _isError = true;
-        _errorMessage = 'Invalid license key';
+        _errorMessage = result['message'] ?? 'Failed to validate license';
       });
     }
 

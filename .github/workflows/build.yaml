@@ -34,6 +34,16 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Generate secrets.dart
+        run: |
+          echo "// This file contains API endpoints and credentials" > lib/services/secrets.dart
+          echo "// It should be gitignored and generated during build" >> lib/services/secrets.dart
+          echo "" >> lib/services/secrets.dart
+          echo "const String apiBaseUrl = '${{ secrets.BASE_URL }}';" >> lib/services/secrets.dart
+          echo "const String apiWebSocketUrl = '${{ secrets.WS_URL }}';" >> lib/services/secrets.dart
+          echo "const String apiKeyValue = '${{ secrets.API_KEY }}';" >> lib/services/secrets.dart
+          echo "const String apiSecretValue = '${{ secrets.API_SECRET }}';" >> lib/services/secrets.dart
+
       - name: Setup JAVA
         if: startsWith(matrix.platform,'android')
         uses: actions/setup-java@v4
