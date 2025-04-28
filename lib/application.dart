@@ -110,7 +110,7 @@ class ApplicationState extends ConsumerState<Application> {
   
   void _setupApiService() {
     // Set up logout callback for the ApiService
-    _apiService.setLogoutCallback((reason) {
+    _apiService.addLogoutListener((reason) {
       // When logout happens, update the UI
       setState(() {
         _isLoggedIn = false;
