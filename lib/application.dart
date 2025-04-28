@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:errorx/clash/clash.dart';
@@ -10,7 +9,6 @@ import 'package:errorx/manager/manager.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/providers/config.dart';
 import 'package:errorx/services/api_service.dart';
-import 'package:errorx/services/background_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -30,7 +28,7 @@ class Application extends ConsumerStatefulWidget {
   ConsumerState<Application> createState() => ApplicationState();
 }
 
-class ApplicationState extends ConsumerState<Application> with WidgetsBindingObserver {
+class ApplicationState extends ConsumerState<Application> {
   late ColorSchemes systemColorSchemes;
   Timer? _autoUpdateGroupTaskTimer;
   Timer? _autoUpdateProfilesTaskTimer;
@@ -65,18 +63,12 @@ class ApplicationState extends ConsumerState<Application> with WidgetsBindingObs
   @override
   void initState() {
     super.initState();
-    // Register as an observer to detect app lifecycle changes
-    WidgetsBinding.instance.addObserver(this);
-    
     _checkLoginStatus();
     _setupApplicationController();
     _setupApiService();
     _autoUpdateGroupTask();
     _autoUpdateProfilesTask();
     _startConnectionCheck();
-    
-    // Initialize background services
-    _initializeBackgroundService();
   }
 
   Future<void> _checkLoginStatus() async {
@@ -328,47 +320,12 @@ class ApplicationState extends ConsumerState<Application> with WidgetsBindingObs
     );
   }
 
-  Future<void> _initializeBackgroundService() async {
-    if (Platform.isAndroid) {
-      // Only initialize background service on Android
-      await BackgroundService.initialize();
-    }
-  }
-  
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    
-    // Handle app lifecycle changes
-    if (state == AppLifecycleState.resumed) {
-      // App is in the foreground
-      commonPrint.log('App resumed, checking WebSocket connection');
-      _apiService.checkAndReconnectWebSocket();
-      
-    } else if (state == AppLifecycleState.paused) {
-      // App is in the background
-      commonPrint.log('App paused, registering background tasks');
-      if (Platform.isAndroid) {
-        BackgroundService.registerKeepAliveTask();
-      }
-    }
-  }
-
   @override
   Future<void> dispose() async {
-    // Remove observer
-    WidgetsBinding.instance.removeObserver(this);
-    
     linkManager.destroy();
     _autoUpdateGroupTaskTimer?.cancel();
     _autoUpdateProfilesTaskTimer?.cancel();
     _connectionCheckTimer?.cancel();
-    
-    // Cancel background tasks
-    if (Platform.isAndroid) {
-      await BackgroundService.cancelAllTasks();
-    }
-    
     await clashCore.destroy();
     await globalState.appController.savePreferences();
     await globalState.appController.handleExit();
