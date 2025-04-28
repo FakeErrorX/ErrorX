@@ -59,14 +59,6 @@ class Tray {
       },
     );
     menuItems.add(showMenuItem);
-    final startMenuItem = MenuItem.checkbox(
-      label: trayState.isStart ? appLocalizations.stop : appLocalizations.start,
-      onClick: (_) async {
-        globalState.appController.updateStart();
-      },
-      checked: false,
-    );
-    menuItems.add(startMenuItem);
     menuItems.add(MenuItem.separator());
     for (final mode in Mode.values) {
       menuItems.add(
@@ -143,14 +135,7 @@ class Tray {
       },
       checked: trayState.autoLaunch,
     );
-    final copyEnvVarMenuItem = MenuItem(
-      label: appLocalizations.copyEnvVar,
-      onClick: (_) async {
-        await _copyEnv(trayState.port);
-      },
-    );
     menuItems.add(autoStartMenuItem);
-    menuItems.add(copyEnvVarMenuItem);
     menuItems.add(MenuItem.separator());
     final exitMenuItem = MenuItem(
       label: appLocalizations.exit,
@@ -180,20 +165,6 @@ class Tray {
     //     "${traffic.up.shortShow} ↑ \n${traffic.down.shortShow} ↓",
     //   );
     // }
-  }
-
-  Future<void> _copyEnv(int port) async {
-    final url = "http://127.0.0.1:$port";
-
-    final cmdline = Platform.isWindows
-        ? "set \$env:all_proxy=$url"
-        : "export all_proxy=$url";
-
-    await Clipboard.setData(
-      ClipboardData(
-        text: cmdline,
-      ),
-    );
   }
 }
 

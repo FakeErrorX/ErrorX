@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:math';
 
 import 'package:errorx/common/common.dart';
 import 'package:errorx/enum/enum.dart';
@@ -121,6 +122,8 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
 
   @override
   void dispose() {
+    // Cancel any pending throttler calls
+    throttler.cancel("request");
     _requestsStateNotifier.dispose();
     _scrollController.dispose();
     _animationController.dispose();
@@ -130,6 +133,11 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
 
   updateRequestsThrottler() {
     throttler.call("request", () {
+      // Check if widget is still mounted before proceeding
+      if (!mounted) {
+        return;
+      }
+      
       final isEquality = connectionListEquality.equals(
         _requests,
         _requestsStateNotifier.value.connections,
@@ -137,10 +145,21 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
       if (isEquality) {
         return;
       }
+      
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _requestsStateNotifier.value = _requestsStateNotifier.value.copyWith(
-          connections: _requests,
-        );
+        // Double-check if still mounted before updating ValueNotifier
+        if (!mounted) {
+          return;
+        }
+        
+        try {
+          _requestsStateNotifier.value = _requestsStateNotifier.value.copyWith(
+            connections: _requests,
+          );
+        } catch (e) {
+          // Ignore errors if notifier was disposed
+          commonPrint.log('Error updating requests: $e');
+        }
       });
     }, duration: commonDuration);
   }
@@ -233,6 +252,9 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
                           final index = entry.key;
                           final connection = entry.value;
                           
+                          final double startInterval = min(0.2 + min(index * 0.03, 0.5), 0.7);
+                          final double endInterval = min(startInterval + 0.3, 1.0);
+                          
                           return SlideTransition(
                             position: Tween<Offset>(
                               begin: const Offset(0, 0.1),
@@ -241,8 +263,8 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
                               CurvedAnimation(
                                 parent: _animationController,
                                 curve: Interval(
-                                  0.2 + (index * 0.03).clamp(0.0, 0.5),
-                                  0.6 + (index * 0.03).clamp(0.0, 0.5),
+                                  startInterval,
+                                  endInterval,
                                   curve: Curves.easeOutCubic,
                                 ),
                               ),
