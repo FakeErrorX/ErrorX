@@ -25,7 +25,7 @@ class EditProfile extends StatefulWidget {
   State<EditProfile> createState() => _EditProfileState();
 }
 
-class _EditProfileState extends State<EditProfile> {
+class _EditProfileState extends State<EditProfile> with SingleTickerProviderStateMixin {
   late TextEditingController labelController;
   late TextEditingController urlController;
   late TextEditingController autoUpdateDurationController;
@@ -34,6 +34,7 @@ class _EditProfileState extends State<EditProfile> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final fileInfoNotifier = ValueNotifier<FileInfo?>(null);
   Uint8List? fileData;
+  late AnimationController _animationController;
 
   Profile get profile => widget.profile;
 
@@ -50,6 +51,18 @@ class _EditProfileState extends State<EditProfile> {
       if (path == null) return;
       fileInfoNotifier.value = await _getFileInfo(path);
     });
+    
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _animationController.forward();
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   _handleConfirm() async {
@@ -148,7 +161,7 @@ class _EditProfileState extends State<EditProfile> {
       rawText = await file.readAsString();
     }
     if (!mounted) return;
-    final title = widget.profile.label ?? widget.profile.id;
+    final title = widget.profile.label ?? widget.profile.id ?? "Profile";
     final data = await BaseNavigator.push<String>(
       globalState.homeScaffoldKey.currentContext!,
       EditorPage(
@@ -209,16 +222,117 @@ class _EditProfileState extends State<EditProfile> {
     }
   }
 
+  Widget _buildFormCard({
+    required Widget child,
+    int index = 0,
+    bool withAnimation = true,
+  }) {
+    if (!withAnimation) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: context.colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: child,
+        ),
+      );
+    }
+    
+    final animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Interval(0.1 * index, 0.2 + (0.1 * index), curve: Curves.easeOutBack),
+    );
+    
+    return SlideTransition(
+      position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(animation),
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0, end: 1).animate(animation),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: context.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.colorScheme.shadow.withOpacity(0.05),
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    Color? iconColor,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+    bool enabled = true,
+  }) {
+    return TextFormField(
+      controller: controller,
+      enabled: enabled,
+      maxLines: maxLines,
+      minLines: 1,
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: context.colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        labelText: label,
+        prefixIcon: Icon(
+          icon,
+          color: iconColor ?? context.colorScheme.primary,
+        ),
+        filled: true,
+        fillColor: context.colorScheme.surfaceVariant.withOpacity(0.1),
+      ),
+      validator: validator,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Header animation
+    final headerAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.3, curve: Curves.easeOutQuint),
+    );
+    
     final items = [
-      ListItem(
-        title: TextFormField(
+      _buildFormCard(
+        index: 0,
+        child: _buildModernTextField(
           controller: labelController,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            labelText: appLocalizations.name,
-          ),
+          label: appLocalizations.name,
+          icon: Icons.label_rounded,
           validator: (String? value) {
             if (value == null || value.isEmpty) {
               return appLocalizations.profileNameNullValidationDesc;
@@ -228,56 +342,79 @@ class _EditProfileState extends State<EditProfile> {
         ),
       ),
       if (widget.profile.type == ProfileType.url) ...[
-        ListItem(
-          title: TextFormField(
-            controller: urlController,
-            maxLines: 5,
-            minLines: 1,
-            decoration: InputDecoration(
-              border: const OutlineInputBorder(),
-              labelText: appLocalizations.url,
-            ),
-            validator: (String? value) {
-              if (value == null || value.isEmpty) {
-                return appLocalizations.profileUrlNullValidationDesc;
-              }
-              if (!value.isUrl) {
-                return appLocalizations.profileUrlInvalidValidationDesc;
-              }
-              return null;
-            },
-          ),
-        ),
-        ListItem.switchItem(
-          title: Text(appLocalizations.autoUpdate),
-          delegate: SwitchDelegate<bool>(
-            value: autoUpdate,
-            onChanged: _setAutoUpdate,
-          ),
-        ),
-        if (autoUpdate)
-          ListItem(
-            title: TextFormField(
-              controller: autoUpdateDurationController,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: appLocalizations.autoUpdateInterval,
+        _buildFormCard(
+          index: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildModernTextField(
+                controller: urlController,
+                label: appLocalizations.url,
+                icon: Icons.link_rounded,
+                iconColor: Colors.blue.shade600,
+                maxLines: 5,
+                validator: (String? value) {
+                  if (value == null || value.isEmpty) {
+                    return appLocalizations.profileUrlNullValidationDesc;
+                  }
+                  if (!value.isUrl) {
+                    return appLocalizations.profileUrlInvalidValidationDesc;
+                  }
+                  return null;
+                },
               ),
-              validator: (String? value) {
-                if (value == null || value.isEmpty) {
-                  return appLocalizations
-                      .profileAutoUpdateIntervalNullValidationDesc;
-                }
-                try {
-                  int.parse(value);
-                } catch (_) {
-                  return appLocalizations
-                      .profileAutoUpdateIntervalInvalidValidationDesc;
-                }
-                return null;
-              },
-            ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.primaryContainer.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.sync_rounded,
+                      color: context.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      appLocalizations.autoUpdate,
+                      style: context.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: autoUpdate,
+                    onChanged: _setAutoUpdate,
+                  ),
+                ],
+              ),
+              if (autoUpdate) ...[
+                const SizedBox(height: 16),
+                _buildModernTextField(
+                  controller: autoUpdateDurationController,
+                  label: appLocalizations.autoUpdateInterval,
+                  icon: Icons.timer_rounded,
+                  iconColor: Colors.orange.shade600,
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return appLocalizations.profileAutoUpdateIntervalNullValidationDesc;
+                    }
+                    try {
+                      int.parse(value);
+                    } catch (_) {
+                      return appLocalizations.profileAutoUpdateIntervalInvalidValidationDesc;
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ],
           ),
+        ),
       ],
       ValueListenableBuilder<FileInfo?>(
         valueListenable: fileInfoNotifier,
@@ -285,35 +422,77 @@ class _EditProfileState extends State<EditProfile> {
           return FadeThroughBox(
             child: fileInfo == null
                 ? Container()
-                : ListItem(
-                    title: Text(
-                      appLocalizations.profile,
-                    ),
-                    subtitle: Column(
+                : _buildFormCard(
+                    index: widget.profile.type == ProfileType.url ? 2 : 1,
+                    withAnimation: false,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(
-                          height: 4,
-                        ),
-                        Text(
-                          fileInfo.desc,
-                        ),
-                        const SizedBox(
-                          height: 8,
-                        ),
-                        Wrap(
-                          runSpacing: 6,
-                          spacing: 12,
+                        Row(
                           children: [
-                            CommonChip(
-                              avatar: const Icon(Icons.edit),
-                              label: appLocalizations.edit,
-                              onPressed: _editProfileFile,
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: context.colorScheme.tertiaryContainer.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.description_rounded,
+                                color: context.colorScheme.tertiary,
+                              ),
                             ),
-                            CommonChip(
-                              avatar: const Icon(Icons.upload),
-                              label: appLocalizations.upload,
-                              onPressed: _uploadProfileFile,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    appLocalizations.profile,
+                                    style: context.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    fileInfo.desc,
+                                    style: context.textTheme.bodyMedium?.copyWith(
+                                      color: context.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _editProfileFile,
+                                icon: const Icon(Icons.edit_rounded),
+                                label: Text(appLocalizations.edit),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: _uploadProfileFile,
+                                icon: const Icon(Icons.upload_rounded),
+                                label: Text(appLocalizations.upload),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -324,6 +503,7 @@ class _EditProfileState extends State<EditProfile> {
         },
       ),
     ];
+    
     return CommonPopScope(
       onPop: () {
         if (fileData == null) {
@@ -332,34 +512,100 @@ class _EditProfileState extends State<EditProfile> {
         _handleBack();
         return false;
       },
-      child: FloatLayout(
-        floatingWidget: FloatWrapper(
-          child: FloatingActionButton.extended(
-            heroTag: null,
-            onPressed: _handleConfirm,
-            label: Text(appLocalizations.save),
-            icon: const Icon(Icons.save),
-          ),
-        ),
-        child: Form(
+      child: Scaffold(
+        body: Form(
           key: _formKey,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 16,
-            ),
-            child: ListView.separated(
-              padding: kMaterialListPadding.copyWith(
-                bottom: 72,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  context.colorScheme.background,
+                  context.colorScheme.surface,
+                ],
+                stops: const [0.0, 1.0],
               ),
-              itemBuilder: (_, index) {
-                return items[index];
-              },
-              separatorBuilder: (_, __) {
-                return const SizedBox(
-                  height: 24,
-                );
-              },
-              itemCount: items.length,
+            ),
+            child: Stack(
+              children: [
+                ListView(
+                  padding: const EdgeInsets.only(top: 16, bottom: 100),
+                  children: [
+                    // Animated header
+                    FadeTransition(
+                      opacity: Tween<double>(begin: 0, end: 1).animate(headerAnimation),
+                      child: SlideTransition(
+                        position: Tween<Offset>(begin: const Offset(0, -0.2), end: Offset.zero)
+                            .animate(headerAnimation),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: context.colorScheme.primary.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.edit_note_rounded,
+                                size: 48,
+                                color: context.colorScheme.primary,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                widget.profile.label ?? widget.profile.id ?? "Profile",
+                                style: context.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: context.colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                appLocalizations.edit,
+                                textAlign: TextAlign.center,
+                                style: context.textTheme.bodyMedium?.copyWith(
+                                  color: context.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...items,
+                  ],
+                ),
+                Positioned(
+                  bottom: 24,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: const Interval(0.6, 1.0, curve: Curves.elasticOut),
+                        ),
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: _handleConfirm,
+                        icon: const Icon(Icons.save_rounded),
+                        label: Text(appLocalizations.save),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: context.colorScheme.onPrimary,
+                          backgroundColor: context.colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

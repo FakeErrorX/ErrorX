@@ -9,18 +9,20 @@ part 'generated/config.g.dart';
 class AppSetting extends _$AppSetting with AutoDisposeNotifierMixin {
   @override
   AppSettingProps build() {
-    return globalState.config.appSetting;
+    final settings = globalState.config.appSetting;
+    return settings.copyWith(openLogs: false);
   }
 
   @override
   onUpdate(value) {
     globalState.config = globalState.config.copyWith(
-      appSetting: value,
+      appSetting: value.copyWith(openLogs: false),
     );
   }
 
   updateState(AppSettingProps Function(AppSettingProps state) builder) {
-    state = builder(state);
+    final newState = builder(state);
+    state = newState.copyWith(openLogs: false);
   }
 }
 

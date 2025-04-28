@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:errorx/common/common.dart';
 import 'package:errorx/enum/enum.dart';
@@ -21,7 +22,7 @@ class RequestsFragment extends ConsumerStatefulWidget {
 }
 
 class _RequestsFragmentState extends ConsumerState<RequestsFragment>
-    with PageMixin {
+    with PageMixin, SingleTickerProviderStateMixin {
   final GlobalKey<CacheItemExtentListViewState> _key = GlobalKey();
   final _requestsStateNotifier =
       ValueNotifier<ConnectionsState>(const ConnectionsState());
@@ -31,6 +32,7 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
     initialScrollOffset: _preOffset != 0 ? _preOffset : double.maxFinite,
   );
 
+  late AnimationController _animationController;
   double _currentMaxWidth = 0;
 
   @override
@@ -49,6 +51,12 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _animationController.forward();
+    
     _requestsStateNotifier.value = _requestsStateNotifier.value.copyWith(
       connections: globalState.appState.requests.list,
     );
@@ -62,6 +70,8 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
       (prev, next) {
         if (prev != next && next == true) {
           initPageState();
+          _animationController.reset();
+          _animationController.forward();
         }
       },
       fireImmediately: true,
@@ -113,6 +123,7 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
   void dispose() {
     _requestsStateNotifier.dispose();
     _scrollController.dispose();
+    _animationController.dispose();
     _currentMaxWidth = 0;
     super.dispose();
   }
@@ -136,91 +147,197 @@ class _RequestsFragmentState extends ConsumerState<RequestsFragment>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        return Consumer(
-          builder: (_, ref, child) {
-            final value = ref.watch(
-              patchClashConfigProvider.select(
-                (state) =>
-                    state.findProcessMode == FindProcessMode.always &&
-                    Platform.isAndroid,
+    return Stack(
+      children: [
+        // Background gradient
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                context.colorScheme.surface,
+                context.colorScheme.background.withOpacity(0.95),
+              ],
+              stops: const [0.0, 1.0],
+            ),
+          ),
+        ),
+        
+        // Content
+        LayoutBuilder(
+          builder: (_, constraints) {
+            return Consumer(
+              builder: (_, ref, child) {
+                final value = ref.watch(
+                  patchClashConfigProvider.select(
+                    (state) =>
+                        state.findProcessMode == FindProcessMode.always &&
+                        Platform.isAndroid,
+                  ),
+                );
+                _handleTryClearCache(constraints.maxWidth - 40 - (value ? 60 : 0));
+                return child!;
+              },
+              child: ValueListenableBuilder<ConnectionsState>(
+                valueListenable: _requestsStateNotifier,
+                builder: (_, state, __) {
+                  final connections = state.list;
+                  
+                  if (connections.isEmpty) {
+                    return FadeTransition(
+                      opacity: _animationController,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: context.colorScheme.surfaceVariant.withOpacity(0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.view_timeline,
+                                size: 40,
+                                color: context.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              appLocalizations.nullRequestsDesc,
+                              style: context.textTheme.titleMedium?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Network requests will appear here as they occur",
+                              style: context.textTheme.bodyMedium?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  final items = connections
+                      .asMap()
+                      .entries
+                      .map<Widget>(
+                        (entry) {
+                          final index = entry.key;
+                          final connection = entry.value;
+                          
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.1),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: _animationController,
+                                curve: Interval(
+                                  0.2 + (index * 0.03).clamp(0.0, 0.5),
+                                  0.6 + (index * 0.03).clamp(0.0, 0.5),
+                                  curve: Curves.easeOutCubic,
+                                ),
+                              ),
+                            ),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: context.colorScheme.surface.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.colorScheme.shadow.withOpacity(0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: ConnectionItem(
+                                  key: Key(connection.id),
+                                  connection: connection,
+                                  onClickKeyword: (value) {
+                                    context.commonScaffoldState?.addKeyword(value);
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                      .separated(
+                        const SizedBox(height: 8),
+                      )
+                      .toList();
+                      
+                  return FadeTransition(
+                    opacity: _animationController,
+                    child: ClipRRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: NotificationListener<ScrollEndNotification>(
+                            onNotification: (details) {
+                              _preOffset = details.metrics.pixels;
+                              return false;
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: CommonScrollBar(
+                                controller: _scrollController,
+                                child: CacheItemExtentListView(
+                                  key: _key,
+                                  reverse: true,
+                                  shrinkWrap: true,
+                                  physics: NextClampingScrollPhysics(),
+                                  controller: _scrollController,
+                                  itemExtentBuilder: (index) {
+                                    final widget = items[index];
+                                    if (widget.runtimeType == SizedBox) {
+                                      return 8;  // Height of the SizedBox separator
+                                    }
+                                    final measure = globalState.measure;
+                                    final bodyMediumHeight = measure.bodyMediumHeight;
+                                    final connection = connections[(index / 2).floor()];
+                                    final height = _calcCacheHeight(connection);
+                                    return height + bodyMediumHeight + 32 + 8;  // Added padding
+                                  },
+                                  itemBuilder: (_, index) {
+                                    return items[index];
+                                  },
+                                  itemCount: items.length,
+                                  keyBuilder: (int index) {
+                                    final widget = items[index];
+                                    if (widget.runtimeType == SizedBox) {
+                                      return "spacer_$index";
+                                    }
+                                    final connection = connections[(index / 2).floor()];
+                                    return connection.id;
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             );
-            _handleTryClearCache(constraints.maxWidth - 40 - (value ? 60 : 0));
-            return child!;
           },
-          child: ValueListenableBuilder<ConnectionsState>(
-            valueListenable: _requestsStateNotifier,
-            builder: (_, state, __) {
-              final connections = state.list;
-              if (connections.isEmpty) {
-                return NullStatus(
-                  label: appLocalizations.nullRequestsDesc,
-                );
-              }
-              final items = connections
-                  .map<Widget>(
-                    (connection) => ConnectionItem(
-                      key: Key(connection.id),
-                      connection: connection,
-                      onClickKeyword: (value) {
-                        context.commonScaffoldState?.addKeyword(value);
-                      },
-                    ),
-                  )
-                  .separated(
-                    const Divider(
-                      height: 0,
-                    ),
-                  )
-                  .toList();
-              return Align(
-                alignment: Alignment.topCenter,
-                child: NotificationListener<ScrollEndNotification>(
-                  onNotification: (details) {
-                    _preOffset = details.metrics.pixels;
-                    return false;
-                  },
-                  child: CommonScrollBar(
-                    controller: _scrollController,
-                    child: CacheItemExtentListView(
-                      key: _key,
-                      reverse: true,
-                      shrinkWrap: true,
-                      physics: NextClampingScrollPhysics(),
-                      controller: _scrollController,
-                      itemExtentBuilder: (index) {
-                        final widget = items[index];
-                        if (widget.runtimeType == Divider) {
-                          return 0;
-                        }
-                        final measure = globalState.measure;
-                        final bodyMediumHeight = measure.bodyMediumHeight;
-                        final connection = connections[(index / 2).floor()];
-                        final height = _calcCacheHeight(connection);
-                        return height + bodyMediumHeight + 32;
-                      },
-                      itemBuilder: (_, index) {
-                        return items[index];
-                      },
-                      itemCount: items.length,
-                      keyBuilder: (int index) {
-                        final widget = items[index];
-                        if (widget.runtimeType == Divider) {
-                          return "divider";
-                        }
-                        final connection = connections[(index / 2).floor()];
-                        return connection.id;
-                      },
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

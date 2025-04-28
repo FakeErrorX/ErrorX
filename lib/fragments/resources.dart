@@ -15,11 +15,15 @@ class GeoItem {
   final String label;
   final String key;
   final String fileName;
+  final IconData icon;
+  final Color color;
 
   const GeoItem({
     required this.label,
     required this.key,
     required this.fileName,
+    required this.icon,
+    required this.color,
   });
 }
 
@@ -28,59 +32,99 @@ class Resources extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const geoItems = <GeoItem>[
+    final geoItems = <GeoItem>[
       GeoItem(
         label: "GeoIp",
         fileName: geoIpFileName,
         key: "geoip",
+        icon: Icons.public_rounded,
+        color: Colors.blue.shade700,
       ),
       GeoItem(
         label: "GeoSite",
         fileName: geoSiteFileName,
         key: "geosite",
+        icon: Icons.language_rounded,
+        color: Colors.green.shade700,
       ),
       GeoItem(
         label: "MMDB",
         fileName: mmdbFileName,
         key: "mmdb",
+        icon: Icons.storage_rounded,
+        color: Colors.orange.shade700,
       ),
       GeoItem(
         label: "ASN",
         fileName: asnFileName,
         key: "asn",
+        icon: Icons.account_tree_rounded,
+        color: Colors.purple.shade700,
       ),
     ];
 
-    return ListView.separated(
-      itemBuilder: (_, index) {
-        final geoItem = geoItems[index];
-        return GeoDataListItem(
-          geoItem: geoItem,
-        );
-      },
-      separatorBuilder: (BuildContext context, int index) {
-        return const Divider(
-          height: 0,
-        );
-      },
-      itemCount: geoItems.length,
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header section
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0, left: 4.0),
+            child: Text(
+              'Resources Management',
+              style: context.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+          
+          // Description text
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24.0, left: 4.0, right: 4.0),
+            child: Text(
+              'Manage your geo data resources used by the application. You can update and customize URLs for each resource.',
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          
+          // Resource cards list
+          Expanded(
+            child: ListView.builder(
+              itemCount: geoItems.length,
+              itemBuilder: (context, index) {
+                final geoItem = geoItems[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: GeoDataCard(
+                    geoItem: geoItem,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class GeoDataListItem extends StatefulWidget {
+class GeoDataCard extends StatefulWidget {
   final GeoItem geoItem;
 
-  const GeoDataListItem({
+  const GeoDataCard({
     super.key,
     required this.geoItem,
   });
 
   @override
-  State<GeoDataListItem> createState() => _GeoDataListItemState();
+  State<GeoDataCard> createState() => _GeoDataCardState();
 }
 
-class _GeoDataListItemState extends State<GeoDataListItem> {
+class _GeoDataCardState extends State<GeoDataCard> {
   final isUpdating = ValueNotifier<bool>(false);
 
   GeoItem get geoItem => widget.geoItem;
@@ -128,77 +172,6 @@ class _GeoDataListItemState extends State<GeoDataListItem> {
     );
   }
 
-  Widget _buildSubtitle() {
-    return Consumer(
-      builder: (_, ref, __) {
-        final url = ref.watch(
-          patchClashConfigProvider
-              .select((state) => state.geoXUrl.toJson()[geoItem.key]),
-        );
-        if (url == null) {
-          return SizedBox();
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(
-              height: 4,
-            ),
-            FutureBuilder<FileInfo>(
-              future: _getGeoFileLastModified(geoItem.fileName),
-              builder: (_, snapshot) {
-                return SizedBox(
-                  height: 24,
-                  child: FadeThroughBox(
-                    key: Key("fade_box_${geoItem.label}"),
-                    child: snapshot.data == null
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            snapshot.data!.desc,
-                          ),
-                  ),
-                );
-              },
-            ),
-            Text(
-              url,
-              style: context.textTheme.bodyMedium?.toLight,
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            Wrap(
-              runSpacing: 6,
-              spacing: 12,
-              children: [
-                CommonChip(
-                  avatar: const Icon(Icons.edit),
-                  label: appLocalizations.edit,
-                  onPressed: () {
-                    _updateUrl(url, ref);
-                  },
-                ),
-                CommonChip(
-                  avatar: const Icon(Icons.sync),
-                  label: appLocalizations.sync,
-                  onPressed: () {
-                    _handleUpdateGeoDataItem();
-                  },
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   _handleUpdateGeoDataItem() async {
     await globalState.safeRun<void>(
       () async {
@@ -206,9 +179,7 @@ class _GeoDataListItemState extends State<GeoDataListItem> {
       },
       silence: false,
     );
-    if (mounted) {
-      setState(() {});
-    }
+    setState(() {});
   }
 
   updateGeoDateItem() async {
@@ -237,30 +208,185 @@ class _GeoDataListItemState extends State<GeoDataListItem> {
 
   @override
   Widget build(BuildContext context) {
-    return ListItem(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
-      ),
-      title: Text(geoItem.label),
-      subtitle: _buildSubtitle(),
-      trailing: SizedBox(
-        height: 48,
-        width: 48,
-        child: ValueListenableBuilder(
-          valueListenable: isUpdating,
-          builder: (_, isUpdating, ___) {
-            return FadeThroughBox(
-              child: isUpdating
-                  ? const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: CircularProgressIndicator(),
-                    )
-                  : const SizedBox(),
-            );
-          },
-        ),
-      ),
+    return Consumer(
+      builder: (context, ref, _) {
+        final url = ref.watch(
+          patchClashConfigProvider
+              .select((state) => state.geoXUrl.toJson()[geoItem.key]),
+        );
+        
+        if (url == null) {
+          return const SizedBox();
+        }
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: context.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.colorScheme.shadow.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(
+              color: context.colorScheme.outline.withOpacity(0.1),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header row with icon, title, and action button
+                Row(
+                  children: [
+                    // Resource icon with colored background
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: geoItem.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        geoItem.icon,
+                        color: geoItem.color,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Title
+                    Expanded(
+                      child: Text(
+                        geoItem.label,
+                        style: context.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                    
+                    // Update indicator
+                    ValueListenableBuilder(
+                      valueListenable: isUpdating,
+                      builder: (_, isUpdating, ___) {
+                        return FadeThroughBox(
+                          child: isUpdating
+                              ? SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: geoItem.color,
+                                  ),
+                                )
+                              : const SizedBox(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // URL display
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    url,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                      fontFamily: 'monospace',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // File info
+                FutureBuilder<FileInfo>(
+                  future: _getGeoFileLastModified(geoItem.fileName),
+                  builder: (_, snapshot) {
+                    return SizedBox(
+                      height: 20,
+                      child: FadeThroughBox(
+                        key: Key("fade_box_${geoItem.label}"),
+                        child: snapshot.data == null
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    size: 14,
+                                    color: context.colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    snapshot.data!.desc,
+                                    style: context.textTheme.bodySmall?.copyWith(
+                                      color: context.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    );
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Action buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Edit button
+                    TextButton.icon(
+                      onPressed: () => _updateUrl(url, ref),
+                      icon: const Icon(Icons.edit_rounded, size: 18),
+                      label: Text(appLocalizations.edit),
+                      style: TextButton.styleFrom(
+                        foregroundColor: geoItem.color,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    
+                    // Sync button
+                    ElevatedButton.icon(
+                      onPressed: _handleUpdateGeoDataItem,
+                      icon: const Icon(Icons.sync_rounded, size: 18),
+                      label: Text(appLocalizations.sync),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: geoItem.color,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -326,8 +452,14 @@ class _UpdateGeoUrlFormDialogState extends State<UpdateGeoUrlFormDialog> {
             maxLines: 5,
             minLines: 1,
             controller: urlController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              hintText: 'Enter resource URL',
+              prefixIcon: const Icon(Icons.link_rounded),
+              filled: true,
+              fillColor: context.colorScheme.surfaceVariant.withOpacity(0.3),
             ),
           ),
         ],

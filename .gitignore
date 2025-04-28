@@ -46,7 +46,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-
+# API Secrets
+/lib/services/secrets.dart
 
 #libclash
 /libclash/
