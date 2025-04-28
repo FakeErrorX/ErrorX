@@ -23,7 +23,6 @@
 - 🔒 **Privacy First**: Open-source and completely ad-free
 - 🎨 **Modern UI**: Material You Design with Surfboard-like interface
 - 🌓 **Customizable**: Multiple color themes and dark mode support
-- ☁️ **Sync Ready**: WebDAV support for seamless data synchronization
 - 🔄 **Flexible**: Subscription link support
 - 📱 **Adaptive**: Optimized for all screen sizes
 
