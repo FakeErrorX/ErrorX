@@ -39,7 +39,7 @@ const defaultWindowProps = WindowProps();
 const defaultAccessControl = AccessControl();
 final defaultThemeProps = ThemeProps().copyWith(
   primaryColor: null,
-  themeMode: ThemeMode.dark,
+  themeMode: ThemeMode.system,
 );
 
 const List<DashboardWidget> defaultDashboardWidgets = [
