@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:errorx/common/common.dart';
 import 'package:errorx/services/secrets.dart';
+import 'package:errorx/services/websocket_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:errorx/state.dart';
@@ -262,6 +263,12 @@ class ApiService {
         }
       });
       
+      // Start WebSocket keep-alive service for Android
+      if (Platform.isAndroid) {
+        final webSocketService = WebSocketService();
+        webSocketService.startKeepAliveService();
+      }
+      
       // Send an initial pong to verify connection
       _sendPong();
     } catch (e) {
@@ -426,6 +433,12 @@ class ApiService {
         commonPrint.log('Error closing WebSocket: $e');
       }
       _webSocketChannel = null;
+    }
+    
+    // Stop WebSocket keep-alive service for Android
+    if (Platform.isAndroid) {
+      final webSocketService = WebSocketService();
+      webSocketService.stopKeepAliveService();
     }
     
     // Clear session data
