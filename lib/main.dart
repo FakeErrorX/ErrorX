@@ -31,12 +31,6 @@ Future<void> main() async {
   globalState.isPre = const String.fromEnvironment("APP_ENV") != 'stable';
   HttpOverrides.global = ErrorXHttpOverrides();
   
-  // Initialize WebSocket keep-alive service for Android
-  if (Platform.isAndroid) {
-    final webSocketService = WebSocketService();
-    await webSocketService.initialize();
-  }
-  
   runApp(ProviderScope(child: const Application()));
 }
 
