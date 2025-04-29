@@ -9,6 +9,7 @@ import 'package:errorx/enum/enum.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/plugins/tile.dart';
 import 'package:errorx/plugins/vpn.dart';
+import 'package:errorx/services/websocket_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,13 @@ Future<void> main() async {
   await window?.init(version);
   globalState.isPre = const String.fromEnvironment("APP_ENV") != 'stable';
   HttpOverrides.global = ErrorXHttpOverrides();
+  
+  // Initialize WebSocket keep-alive service for Android
+  if (Platform.isAndroid) {
+    final webSocketService = WebSocketService();
+    await webSocketService.initialize();
+  }
+  
   runApp(ProviderScope(child: const Application()));
 }
 
