@@ -38,7 +38,7 @@ const defaultProxiesStyle = ProxiesStyle();
 const defaultWindowProps = WindowProps();
 const defaultAccessControl = AccessControl();
 final defaultThemeProps = ThemeProps().copyWith(
-  primaryColor: defaultPrimaryColor.toARGB32(),
+  primaryColor: null,
   themeMode: ThemeMode.dark,
 );
 
