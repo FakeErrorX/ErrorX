@@ -44,18 +44,21 @@ class HomePage extends StatelessWidget {
               pageLabel.name,
             ),
             sideNavigationBar: sideNavigationBar,
-            body: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    context.colorScheme.background,
-                    context.colorScheme.background.withOpacity(0.95),
-                  ],
+            body: SafeArea(
+              bottom: viewMode != ViewMode.mobile,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      context.colorScheme.background,
+                      context.colorScheme.background.withOpacity(0.95),
+                    ],
+                  ),
                 ),
+                child: child!,
               ),
-              child: child!,
             ),
             bottomNavigationBar: bottomNavigationBar,
           );
@@ -197,6 +200,7 @@ class CommonNavigationBar extends ConsumerWidget {
           child: Container(
             height: 70,
             padding: const EdgeInsets.only(top: 6, bottom: 4),
+            margin: EdgeInsets.only(bottom: Platform.isAndroid ? MediaQuery.of(context).padding.bottom : 0),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
