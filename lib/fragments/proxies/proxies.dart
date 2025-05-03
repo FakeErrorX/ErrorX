@@ -4,6 +4,7 @@ import 'package:errorx/fragments/proxies/list.dart';
 import 'package:errorx/fragments/proxies/providers.dart';
 import 'package:errorx/providers/providers.dart';
 import 'package:errorx/widgets/widgets.dart';
+import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'common.dart';
@@ -101,8 +102,22 @@ class _ProxiesFragmentState extends ConsumerState<ProxiesFragment>
         )
       : null;
 
+  // Ensure current profile is properly decrypted before displaying proxies
+  Future<void> _ensureProfilesDecrypted() async {
+    try {
+      await globalState.appController.ensureCurrentProfileDecrypted();
+    } catch (e) {
+      commonPrint.log("Failed to ensure profiles are decrypted: $e");
+    }
+  }
+
   @override
   void initState() {
+    // Ensure profiles are decrypted when this screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureProfilesDecrypted();
+    });
+    
     ref.listenManual(
       proxiesActionsStateProvider,
       fireImmediately: true,

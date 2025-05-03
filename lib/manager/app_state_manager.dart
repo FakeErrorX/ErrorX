@@ -36,7 +36,10 @@ class _AppStateManagerState extends State<AppStateManager>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       globalState.appController.savePreferences();
+      await globalState.appController.ensureAllProfilesEncrypted();
       render?.pause();
+    } else if (state == AppLifecycleState.detached) {
+      await globalState.appController.ensureAllProfilesEncrypted();
     } else {
       render?.resume();
     }

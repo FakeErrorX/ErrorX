@@ -53,6 +53,7 @@ class _WindowContainerState extends ConsumerState<WindowManager>
 
   @override
   void onWindowClose() async {
+    await globalState.appController.ensureAllProfilesEncrypted();
     await globalState.appController.handleBackOrExit();
     super.onWindowClose();
   }
@@ -71,6 +72,7 @@ class _WindowContainerState extends ConsumerState<WindowManager>
 
   @override
   Future<void> onShouldTerminate() async {
+    await globalState.appController.ensureAllProfilesEncrypted();
     await globalState.appController.handleExit();
     super.onShouldTerminate();
   }

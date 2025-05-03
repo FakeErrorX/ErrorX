@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:errorx/clash/core.dart';
 import 'package:errorx/common/common.dart';
+import 'package:errorx/common/encryption_service.dart';
 import 'package:errorx/enum/enum.dart';
 import 'package:errorx/models/models.dart';
 import 'package:errorx/providers/providers.dart';
@@ -48,6 +49,24 @@ class _OverrideProfileState extends State<OverrideProfile> with SingleTickerProv
   _initState(WidgetRef ref) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(Duration(milliseconds: 300), () async {
+        // First ensure the profile is decrypted for core operations
+        try {
+          // Get the profile by ID and ensure it's decrypted
+          final profiles = ref.read(profilesProvider);
+          final profileIndex = profiles.indexWhere((p) => p.id == widget.profileId);
+          
+          if (profileIndex >= 0) {
+            final profile = profiles[profileIndex];
+            // First prepare the profile in memory
+            await profile.prepareForClashCore();
+            // Then temporarily decrypt it for Clash Core to read
+            await profile.temporarilyDecryptForCore();
+          }
+        } catch (e) {
+          commonPrint.log("Failed to prepare profile for override: $e");
+        }
+        
+        // Now get the profile snippet
         final snippet = await clashCore.getProfile(widget.profileId);
         final overrideData = ref.read(
           getProfileOverrideDataProvider(widget.profileId),
@@ -251,6 +270,7 @@ class _OverrideProfileState extends State<OverrideProfile> with SingleTickerProv
                     maxWidth: _currentMaxWidth,
                     ruleListKey: _ruleListKey,
                     animationController: _animationController,
+                    profileId: widget.profileId,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -670,12 +690,14 @@ class RuleContent extends ConsumerWidget {
   final Key ruleListKey;
   final double maxWidth;
   final AnimationController animationController;
+  final String profileId;
 
   const RuleContent({
     super.key,
     required this.ruleListKey,
     required this.maxWidth,
     required this.animationController,
+    required this.profileId,
   });
 
   Widget _proxyDecorator(
@@ -867,21 +889,50 @@ class RuleContent extends ConsumerWidget {
                       ],
                     )
                   : FilledButton.icon(
-                      onPressed: () {
-                        final rules = ref.read(
-                          profileOverrideStateProvider.select(
-                            (state) => state.snippet?.rule ?? [],
-                          ),
-                        );
-                        ref
-                            .read(profileOverrideStateProvider.notifier)
-                            .updateState(
-                          (state) {
-                            return state.copyWith.overrideData!.rule(
-                              overrideRules: rules,
+                      onPressed: () async {
+                        try {
+                          // Make sure the profile is decrypted for Clash Core to read
+                          final profiles = ref.read(profilesProvider);
+                          final profileIndex = profiles.indexWhere((p) => p.id == profileId);
+                          
+                          if (profileIndex >= 0) {
+                            final profile = profiles[profileIndex];
+                            // First prepare the profile in memory
+                            await profile.prepareForClashCore();
+                            // Then temporarily decrypt it for Clash Core to read
+                            await profile.temporarilyDecryptForCore();
+                          }
+                          
+                          // Now get the rules from core
+                          final snippet = await clashCore.getProfile(profileId);
+                          if (snippet?.rule != null && snippet!.rule.isNotEmpty) {
+                            ref.read(profileOverrideStateProvider.notifier).updateState(
+                              (state) {
+                                return state.copyWith.overrideData!.rule(
+                                  overrideRules: snippet.rule,
+                                );
+                              },
                             );
-                          },
-                        );
+                          } else {
+                            // Show error if rules couldn't be retrieved
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Could not retrieve original rules. Please try again."),
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          commonPrint.log("Error getting original rules: $e");
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Error retrieving rules: $e"),
+                              ),
+                            );
+                          }
+                        }
                       },
                       icon: Icon(Icons.file_download_rounded),
                       label: Text(appLocalizations.getOriginRules),
