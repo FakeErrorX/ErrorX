@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:errorx/clash/clash.dart';
 import 'package:errorx/common/archive.dart';
+import 'package:errorx/common/encryption_service.dart';
 import 'package:errorx/enum/enum.dart';
 import 'package:errorx/providers/providers.dart';
 import 'package:errorx/state.dart';
@@ -257,6 +258,12 @@ class AppController {
   Future<void> _updateClashConfig([bool? isPatch]) async {
     final profile = _ref.watch(currentProfileProvider);
     await _ref.read(currentProfileProvider)?.checkAndUpdate();
+    
+    // Temporarily decrypt the profile file for Clash Core to read
+    if (profile != null) {
+      await profile.temporarilyDecryptForCore();
+    }
+    
     final patchConfig = _ref.read(patchClashConfigProvider);
     final appSetting = _ref.read(appSettingProvider);
     bool enableTun = patchConfig.tun.enable;
@@ -286,6 +293,63 @@ class AppController {
     if (res.isNotEmpty) throw res;
     lastTunEnable = enableTun;
     lastProfileModified = await profile?.profileLastModified;
+  }
+
+  // Ensure all profiles are properly decrypted for core operations
+  Future<void> ensureProfilesDecrypted() async {
+    // Get all profiles and ensure they're decrypted for core operations
+    final profiles = _ref.read(profilesProvider);
+    for (final profile in profiles) {
+      try {
+        await profile.prepareForClashCore();
+      } catch (e) {
+        commonPrint.log("Failed to decrypt profile ${profile.id}: $e");
+      }
+    }
+  }
+
+  // Enhanced version to ensure current profile is decrypted for Clash Core
+  Future<void> ensureCurrentProfileDecrypted() async {
+    final currentProfile = _ref.read(currentProfileProvider);
+    if (currentProfile != null) {
+      try {
+        // First prepare the profile in memory
+        await currentProfile.prepareForClashCore();
+        
+        // Then decrypt on disk for Clash Core operations
+        await currentProfile.temporarilyDecryptForCore();
+      } catch (e) {
+        commonPrint.log("Failed to decrypt current profile: $e");
+      }
+    }
+  }
+
+  // Ensure all profiles are safely encrypted before app exits
+  Future<void> ensureAllProfilesEncrypted() async {
+    final profiles = _ref.read(profilesProvider);
+    for (final profile in profiles) {
+      try {
+        // Get the file path
+        final profilePath = await appPath.getProfilePath(profile.id);
+        if (profilePath == null) continue;
+        
+        final file = File(profilePath);
+        if (!await file.exists()) continue;
+        
+        // Check if file is currently encrypted
+        final bytes = await file.readAsBytes();
+        if (!EncryptionService.hasEncryptionHeader(bytes) && 
+            EncryptionService.isProfileCached(profile.id)) {
+          // File is decrypted but we have the cached version, re-encrypt immediately
+          final cachedBytes = EncryptionService.getCachedProfile(profile.id)!;
+          final encryptedBytes = EncryptionService.encrypt(cachedBytes);
+          await file.writeAsBytes(encryptedBytes);
+          commonPrint.log("Re-encrypted profile ${profile.id} before exit");
+        }
+      } catch (e) {
+        commonPrint.log("Failed to ensure encryption for profile ${profile.id}: $e");
+      }
+    }
   }
 
   Future _applyProfile() async {
@@ -342,6 +406,9 @@ class AppController {
   }
 
   Future<void> updateGroups() async {
+    // Ensure the current profile is decrypted for Clash Core operations
+    await ensureCurrentProfileDecrypted();
+    
     _ref.read(groupsProvider.notifier).value = await retry(
       task: () async {
         return await clashCore.getProxiesGroups();
@@ -665,15 +732,34 @@ class AppController {
     toProfiles();
     final commonScaffoldState = globalState.homeScaffoldKey.currentState;
     if (commonScaffoldState?.mounted != true) return;
-    final profile = await commonScaffoldState?.loadingRun<Profile?>(
-      () async {
-        await Future.delayed(const Duration(milliseconds: 300));
-        return await Profile.normal(label: platformFile?.name).saveFile(bytes);
-      },
-      title: "${appLocalizations.add}${appLocalizations.profile}",
-    );
-    if (profile != null) {
-      await addProfile(profile);
+    try {
+      final profile = await commonScaffoldState?.loadingRun<Profile?>(
+        () async {
+          await Future.delayed(const Duration(milliseconds: 300));
+          try {
+            // Check if bytes already have the encryption header
+            if (EncryptionService.hasEncryptionHeader(bytes)) {
+              commonPrint.log("Detected already encrypted profile, will decrypt before importing");
+            }
+            return await Profile.normal(label: platformFile?.name).saveFile(bytes);
+          } catch (e) {
+            commonPrint.log("Error importing profile: $e");
+            rethrow;
+          }
+        },
+        title: "${appLocalizations.add}${appLocalizations.profile}",
+      );
+      if (profile != null) {
+        await addProfile(profile);
+        commonPrint.log("Profile imported successfully: ${profile.label}");
+      }
+    } catch (e) {
+      // Show user-friendly error message when import fails
+      await globalState.showMessage(
+        title: appLocalizations.tip,
+        message: TextSpan(text: e.toString()),
+      );
+      commonPrint.log("Failed to import profile: $e");
     }
   }
 

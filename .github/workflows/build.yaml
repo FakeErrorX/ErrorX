@@ -43,6 +43,7 @@ jobs:
           echo "const String apiWebSocketUrl = '${{ secrets.WS_URL }}';" >> lib/services/secrets.dart
           echo "const String apiKeyValue = '${{ secrets.API_KEY }}';" >> lib/services/secrets.dart
           echo "const String apiSecretValue = '${{ secrets.API_SECRET }}';" >> lib/services/secrets.dart
+          echo "const String encryptionSecretKey = '${{ secrets.ENCRYPTION_KEY }}';" >> lib/services/secrets.dart
 
       - name: Setup JAVA
         if: startsWith(matrix.platform,'android')
