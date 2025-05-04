@@ -7,6 +7,8 @@ class Android {
   init() async {
     app?.onExit = () async {
       await globalState.appController.savePreferences();
+      // Ensure all profiles are encrypted before Android app exit
+      await globalState.appController.ensureAllProfilesEncrypted();
     };
   }
 }

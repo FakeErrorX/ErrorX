@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:math';
 
 import 'package:errorx/clash/clash.dart';
 import 'package:errorx/common/common.dart';
@@ -252,8 +253,8 @@ class _ConnectionsFragmentState extends ConsumerState<ConnectionsFragment>
                             CurvedAnimation(
                               parent: _animationController,
                               curve: Interval(
-                                0.2 + (index * 0.05).clamp(0.0, 0.5),
-                                0.6 + (index * 0.05).clamp(0.0, 0.5),
+                                min(0.2 + min(index * 0.05, 0.5), 0.7),
+                                min(0.6 + min(index * 0.05, 0.4), 1.0),
                                 curve: Curves.easeOutCubic,
                               ),
                             ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:errorx/clash/clash.dart';
@@ -9,6 +10,7 @@ import 'package:errorx/manager/manager.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/providers/config.dart';
 import 'package:errorx/services/api_service.dart';
+import 'package:errorx/services/websocket_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -110,7 +112,7 @@ class ApplicationState extends ConsumerState<Application> {
   
   void _setupApiService() {
     // Set up logout callback for the ApiService
-    _apiService.setLogoutCallback((reason) {
+    _apiService.addLogoutListener((reason) {
       // When logout happens, update the UI
       setState(() {
         _isLoggedIn = false;
@@ -175,6 +177,16 @@ class ApplicationState extends ConsumerState<Application> {
       
       globalState.appController.initLink();
       app?.initShortcuts();
+      
+      // Initialize WebSocket keep-alive service for Android
+      if (Platform.isAndroid) {
+        try {
+          final webSocketService = WebSocketService();
+          await webSocketService.initialize();
+        } catch (e) {
+          commonPrint.log('Error initializing WebSocket service: $e');
+        }
+      }
     });
   }
 
