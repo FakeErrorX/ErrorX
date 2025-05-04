@@ -53,6 +53,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   riverpod: ^2.6.1
+  encrypt: ^5.0.3
+  crypto: ^3.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

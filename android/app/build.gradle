@@ -104,6 +104,7 @@ dependencies {
     implementation("com.android.tools.smali:smali-dexlib2:3.0.7") {
         exclude group: "com.google.guava", module: "guava"
     }
+    implementation "androidx.work:work-runtime-ktx:2.9.0"
 }
 
 

@@ -5,8 +5,10 @@ import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:errorx/common/common.dart';
 import 'package:errorx/services/secrets.dart';
+import 'package:errorx/services/websocket_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:errorx/state.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
@@ -29,8 +31,8 @@ class ApiService {
   Timer? _pingChecker;
   DateTime? _lastPingTime;
   
-  // Callback for logout
-  void Function(String)? _onLogoutCallback;
+  // Callbacks for logout
+  final List<void Function(String)> _logoutListeners = [];
   
   // Singleton pattern
   static final ApiService _instance = ApiService._internal();
@@ -41,9 +43,23 @@ class ApiService {
   
   ApiService._internal();
   
-  // Set the logout callback
+  // Add a logout listener
+  void addLogoutListener(void Function(String) listener) {
+    if (!_logoutListeners.contains(listener)) {
+      _logoutListeners.add(listener);
+    }
+  }
+  
+  // Remove a logout listener
+  void removeLogoutListener(void Function(String) listener) {
+    _logoutListeners.remove(listener);
+  }
+  
+  // Set the logout callback (for backwards compatibility)
   void setLogoutCallback(void Function(String) callback) {
-    _onLogoutCallback = callback;
+    // Clear existing listeners to maintain old behavior
+    _logoutListeners.clear();
+    _logoutListeners.add(callback);
   }
   
   // Get device ID
@@ -247,6 +263,12 @@ class ApiService {
         }
       });
       
+      // Start WebSocket keep-alive service for Android
+      if (Platform.isAndroid) {
+        final webSocketService = WebSocketService();
+        webSocketService.startKeepAliveService();
+      }
+      
       // Send an initial pong to verify connection
       _sendPong();
     } catch (e) {
@@ -367,15 +389,31 @@ class ApiService {
   void _triggerLogout(String reason) {
     commonPrint.log('Triggering logout: $reason');
     
+    // Stop any running processes directly
+    if (globalState.isStart) {
+      commonPrint.log('ApiService: Stopping active processes during logout');
+      
+      // Force stop all operations, clear timers and state
+      globalState.startTime = null;
+      globalState.handleStop();
+      
+      // Make sure app controller state is updated too
+      globalState.appController.updateStatus(false);
+    }
+    
     // Clean up connection and state
     _cleanupConnection();
     
     // Update SharedPreferences
     _updateLoginState(false);
     
-    // Notify UI
-    if (_onLogoutCallback != null) {
-      _onLogoutCallback!(reason);
+    // Notify all listeners
+    for (final listener in _logoutListeners) {
+      try {
+        listener(reason);
+      } catch (e) {
+        commonPrint.log('Error in logout listener: $e');
+      }
     }
   }
   
@@ -397,6 +435,12 @@ class ApiService {
       _webSocketChannel = null;
     }
     
+    // Stop WebSocket keep-alive service for Android
+    if (Platform.isAndroid) {
+      final webSocketService = WebSocketService();
+      webSocketService.stopKeepAliveService();
+    }
+    
     // Clear session data
     _sessionToken = null;
   }
@@ -416,9 +460,17 @@ class ApiService {
     }
   }
   
-  // Logout
+  // Manual logout
   Future<void> logout() async {
     commonPrint.log('Manual logout initiated');
+    
+    // Force stop all operations first
+    if (globalState.isStart) {
+      commonPrint.log('ApiService: Stopping active processes for manual logout');
+      globalState.startTime = null;
+      globalState.handleStop();
+      globalState.appController.updateStatus(false);
+    }
     
     // Clean up connection and session
     _cleanupConnection();
@@ -430,9 +482,13 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('license_key');
     
-    // Notify UI
-    if (_onLogoutCallback != null) {
-      _onLogoutCallback!('');
+    // Notify all listeners
+    for (final listener in _logoutListeners) {
+      try {
+        listener('');
+      } catch (e) {
+        commonPrint.log('Error in logout listener: $e');
+      }
     }
   }
   
@@ -500,8 +556,6 @@ class ApiService {
     }
   }
   
-  // Add a checkConnection method to verify WebSocket connectivity
-
   // Check if WebSocket connection is active, reconnect or logout if not
   void checkConnection() {
     // If no license key, we're not logged in
@@ -569,5 +623,23 @@ class ApiService {
       commonPrint.log('Error sending ping to check connection: $e');
       _handleWebSocketReconnect();
     }
+  }
+  
+  // Check if WebSocket is connected
+  bool isWebSocketConnected() {
+    if (_webSocketChannel == null || _licenseKey == null) {
+      return false;
+    }
+    
+    // If last ping was too long ago, consider connection lost
+    if (_lastPingTime != null) {
+      final now = DateTime.now();
+      final timeSinceLastPing = now.difference(_lastPingTime!);
+      if (timeSinceLastPing.inSeconds > 60) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 }

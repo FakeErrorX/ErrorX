@@ -379,25 +379,6 @@ class ProfileItem extends StatelessWidget {
     ];
   }
 
-  _handleExportFile(BuildContext context) async {
-    final commonScaffoldState = context.commonScaffoldState;
-    final res = await commonScaffoldState?.loadingRun<bool>(
-      () async {
-        final file = await profile.getFile();
-        final value = await picker.saveFile(
-          profile.label ?? profile.id,
-          file.readAsBytesSync(),
-        );
-        if (value == null) return false;
-        return true;
-      },
-      title: appLocalizations.tip,
-    );
-    if (res == true && context.mounted) {
-      context.showNotifier(appLocalizations.exportSuccess);
-    }
-  }
-
   _handlePushGenProfilePage(BuildContext context, String id) {
     BaseNavigator.push(
       context,
@@ -540,13 +521,6 @@ class ProfileItem extends StatelessWidget {
                                           label: appLocalizations.override,
                                           onPressed: () {
                                             _handlePushGenProfilePage(context, profile.id);
-                                          },
-                                        ),
-                                        PopupMenuItemData(
-                                          icon: Icons.file_copy_outlined,
-                                          label: appLocalizations.exportFile,
-                                          onPressed: () {
-                                            _handleExportFile(context);
                                           },
                                         ),
                                         PopupMenuItemData(
