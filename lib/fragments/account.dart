@@ -35,6 +35,7 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = "";
+  bool _isLicenseKeyVisible = false;
 
   @override
   void initState() {
@@ -500,6 +501,13 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
         value: _licenseKey,
         index: 0,
         animationController: _animationController,
+        isSensitive: true,
+        isVisible: _isLicenseKeyVisible,
+        onToggleVisibility: () {
+          setState(() {
+            _isLicenseKeyVisible = !_isLicenseKeyVisible;
+          });
+        },
       ),
       _LicenseInfoItem(
         icon: Icons.workspace_premium_rounded,
@@ -556,6 +564,9 @@ class _LicenseInfoItem extends StatelessWidget {
   final int index;
   final AnimationController animationController;
   final bool isLive;
+  final bool isSensitive;
+  final bool isVisible;
+  final VoidCallback? onToggleVisibility;
   
   const _LicenseInfoItem({
     Key? key,
@@ -566,6 +577,9 @@ class _LicenseInfoItem extends StatelessWidget {
     required this.index,
     required this.animationController,
     this.isLive = false,
+    this.isSensitive = false,
+    this.isVisible = true,
+    this.onToggleVisibility,
   }) : super(key: key);
   
   @override
@@ -655,7 +669,7 @@ class _LicenseInfoItem extends StatelessWidget {
                           children: [
                             Expanded(
                               child: SelectableText(
-                                value,
+                                isSensitive && !isVisible ? "••••••••••••••••" : value,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.2,
@@ -677,6 +691,21 @@ class _LicenseInfoItem extends StatelessWidget {
                                     ),
                                   ],
                                 ),
+                              ),
+                            if (isSensitive && onToggleVisibility != null)
+                              IconButton(
+                                icon: Icon(
+                                  isVisible
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: theme.colorScheme.primary.withOpacity(0.7),
+                                  size: 20,
+                                ),
+                                onPressed: onToggleVisibility,
+                                tooltip: isVisible ? 'Hide license key' : 'Show license key',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                splashRadius: 18,
                               ),
                           ],
                         ),
