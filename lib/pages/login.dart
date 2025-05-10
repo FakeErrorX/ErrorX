@@ -9,6 +9,7 @@ import 'package:errorx/enum/enum.dart';
 import 'package:errorx/services/api_service.dart';
 import 'dart:ui';
 import 'dart:math';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -21,6 +22,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   final TextEditingController _licenseController = TextEditingController();
   bool _isError = false;
   bool _isLoading = false;
+  bool _isLicenseKeyVisible = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -51,7 +53,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     
     _animationController.forward();
     
-    // Try auto-login
+    // Try auto-login and retrieve saved license key
     _checkAutoLogin();
   }
   
@@ -59,6 +61,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     // Only try auto-login if we're not already authenticated
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    
+    // Retrieve saved license key if available
+    final savedLicense = prefs.getString('license_key');
+    if (savedLicense != null && savedLicense.isNotEmpty) {
+      setState(() {
+        _licenseController.text = savedLicense;
+      });
+    }
     
     if (isLoggedIn) {
       setState(() {
@@ -124,6 +134,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     final result = await _apiService.login(_licenseController.text.trim());
     
     if (result['status'] == 'success') {
+      // Save the license key to SharedPreferences for future use
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('license_key', _licenseController.text.trim());
+      
       // Complete the initialization process after successful login
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -154,6 +168,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _launchUrl(String url) async {
+    if (!await launchUrl(Uri.parse(url))) {
+      throw Exception('Could not launch $url');
+    }
   }
 
   @override
@@ -263,6 +283,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               // License key input
                               TextField(
                                 controller: _licenseController,
+                                obscureText: !_isLicenseKeyVisible,
                                 decoration: InputDecoration(
                                   labelText: 'License Key',
                                   hintText: 'Enter your license key',
@@ -271,6 +292,20 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                     color: _isError 
                                         ? theme.colorScheme.error 
                                         : theme.colorScheme.primary,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _isLicenseKeyVisible 
+                                          ? Icons.visibility_off 
+                                          : Icons.visibility,
+                                      color: theme.colorScheme.primary.withOpacity(0.7),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isLicenseKeyVisible = !_isLicenseKeyVisible;
+                                      });
+                                    },
+                                    tooltip: _isLicenseKeyVisible ? 'Hide license key' : 'Show license key',
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
@@ -338,6 +373,62 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                         ),
                                 ),
                               ),
+
+                              const SizedBox(height: 32),
+
+                              // Join Us section
+                              Column(
+                                children: [
+                                  Text(
+                                    'Join Us',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Website
+                                      _SocialButton(
+                                        icon: Icons.public,
+                                        label: 'Website',
+                                        onPressed: () {
+                                          _launchUrl('https://errorx.net');
+                                        },
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Facebook
+                                      _SocialButton(
+                                        icon: Icons.facebook,
+                                        label: 'Facebook',
+                                        onPressed: () {
+                                          _launchUrl('https://facebook.com/ErrorX.gg');
+                                        },
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Telegram
+                                      _SocialButton(
+                                        icon: Icons.telegram,
+                                        label: 'Telegram',
+                                        onPressed: () {
+                                          _launchUrl('https://t.me/ErrorX_BD');
+                                        },
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // Discord
+                                      _SocialButton(
+                                        icon: Icons.forum,
+                                        label: 'Discord',
+                                        onPressed: () {
+                                          _launchUrl('https://discord.gg/sG8FYe8Npf');
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -393,5 +484,49 @@ class _BackgroundPatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(_BackgroundPatternPainter oldDelegate) {
     return oldDelegate.color != color;
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _SocialButton({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.onSurface.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: theme.colorScheme.onSurface.withOpacity(0.8),
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 } 
