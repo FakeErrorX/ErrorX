@@ -54,3 +54,5 @@ app.*.map.json
 
 #jniLibs
 /android/app/src/main/jniLibs/
+
+/services/helper/target/
