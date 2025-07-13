@@ -3201,7 +3201,7 @@ class _$ClashConfigImpl implements _ClashConfig {
       @JsonKey(name: "log-level") this.logLevel = LogLevel.info,
       this.ipv6 = false,
       @JsonKey(name: "find-process-mode", unknownEnumValue: FindProcessMode.off)
-      this.findProcessMode = FindProcessMode.off,
+      this.findProcessMode = FindProcessMode.always,
       @JsonKey(name: "keep-alive-interval")
       this.keepAliveInterval = defaultKeepAliveInterval,
       @JsonKey(name: "unified-delay") this.unifiedDelay = true,
@@ -3217,7 +3217,7 @@ class _$ClashConfigImpl implements _ClashConfig {
       final List<String> rule = const [],
       @JsonKey(name: "global-ua") this.globalUa,
       @JsonKey(name: "external-controller")
-      this.externalController = ExternalControllerStatus.close,
+      this.externalController = ExternalControllerStatus.open,
       final Map<String, String> hosts = const {}})
       : _proxyGroups = proxyGroups,
         _rule = rule,

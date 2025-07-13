@@ -81,6 +81,7 @@ const (
 	getRunTimeMethod               Method = "getRunTime"
 	getCurrentProfileNameMethod    Method = "getCurrentProfileName"
 	getProfileMethod               Method = "getProfile"
+	initEncryptionMethod           Method = "initEncryption"
 )
 
 type Method string

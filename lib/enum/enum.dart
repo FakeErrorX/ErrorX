@@ -236,6 +236,7 @@ enum RouteMode {
 enum ActionMethod {
   message,
   initClash,
+  initEncryption,
   getIsInit,
   forceGc,
   shutdown,

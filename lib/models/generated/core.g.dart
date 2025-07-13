@@ -307,6 +307,7 @@ Map<String, dynamic> _$$ActionImplToJson(_$ActionImpl instance) =>
 const _$ActionMethodEnumMap = {
   ActionMethod.message: 'message',
   ActionMethod.initClash: 'initClash',
+  ActionMethod.initEncryption: 'initEncryption',
   ActionMethod.getIsInit: 'getIsInit',
   ActionMethod.forceGc: 'forceGc',
   ActionMethod.shutdown: 'shutdown',
