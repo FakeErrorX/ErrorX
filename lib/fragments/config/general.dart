@@ -422,7 +422,7 @@ final generalItems = <Widget>[
   FindProcessItem(),
   TcpConcurrentItem(),
   GeodataLoaderItem(),
-  ExternalControllerItem(),
+  // ExternalControllerItem(), // Hidden from general settings
 ]
     .separated(
       const Divider(
@@ -485,7 +485,7 @@ class _GeneralListViewState extends ConsumerState<GeneralListView> with SingleTi
                     findProcessMode: FindProcessMode.always,
                     tcpConcurrent: false,
                     geodataLoader: GeodataLoader.standard,
-                    externalController: ExternalControllerStatus.open,
+                    // externalController: ExternalControllerStatus.open, // Keep disabled
                   ),
                 );
             ref.read(appSettingProvider.notifier).updateState(
@@ -869,6 +869,8 @@ class _GeneralListViewState extends ConsumerState<GeneralListView> with SingleTi
             },
           ),
           
+          // External Controller - Hidden from general settings
+          /*
           _ModernSwitchCard(
             title: appLocalizations.externalController,
             subtitle: appLocalizations.externalControllerDesc,
@@ -885,6 +887,7 @@ class _GeneralListViewState extends ConsumerState<GeneralListView> with SingleTi
               );
             },
           ),
+          */
         ],
       ),
     );

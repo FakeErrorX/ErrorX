@@ -1,7 +1,7 @@
 name: errorx
 description: A multi-platform ErrorX BDIX client based on ClashMeta, simple and easy to use.
 publish_to: 'none'
-version: 1.0.1+202505101
+version: 1.0.2+202507141
 environment:
   sdk: '>=3.1.0 <4.0.0'
 
@@ -43,6 +43,7 @@ dependencies:
   archive: ^3.6.1
   lpinyin: ^2.0.3
   emoji_regex: ^0.0.5
+  flutter_svg: ^2.0.0
   cached_network_image: ^3.4.0
   hotkey_manager: ^0.2.3
   uni_platform: ^0.1.3

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
+import 'package:errorx/clash/clash.dart';
 import 'package:errorx/services/secrets.dart'; // Import secrets
 
 class EncryptionService {
@@ -15,6 +16,26 @@ class EncryptionService {
   
   // In-memory cache for decrypted profile data
   static final Map<String, Uint8List> _decryptedCache = {};
+  
+  // Track if Go encryption has been initialized
+  static bool _goEncryptionInitialized = false;
+  
+  // Initialize encryption in the Go core
+  static Future<bool> initializeGoEncryption() async {
+    try {
+      return await clashCore.initEncryption(_secretKeyString);
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  // Check if Go encryption is initialized
+  static bool get isGoEncryptionInitialized => _goEncryptionInitialized;
+  
+  // Mark Go encryption as initialized
+  static void markGoEncryptionInitialized() {
+    _goEncryptionInitialized = true;
+  }
   
   // Get the encryption key
   static Key _getKey() {

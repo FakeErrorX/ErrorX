@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -6,7 +5,6 @@ import 'package:errorx/clash/clash.dart';
 import 'package:errorx/common/common.dart';
 import 'package:errorx/enum/enum.dart';
 import 'package:errorx/models/models.dart';
-import 'package:errorx/pages/editor.dart';
 import 'package:errorx/state.dart';
 import 'package:errorx/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +28,6 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
   late TextEditingController urlController;
   late TextEditingController autoUpdateDurationController;
   late bool autoUpdate;
-  String? rawText;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final fileInfoNotifier = ValueNotifier<FileInfo?>(null);
   Uint8List? fileData;
@@ -133,172 +130,7 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
     );
   }
 
-  _handleSaveEdit(BuildContext context, String data) async {
-    final message = await globalState.safeRun<String>(
-      () async {
-        final message = await clashCore.validateConfig(data);
-        return message;
-      },
-      silence: false,
-    );
-    if (message?.isNotEmpty == true) {
-      globalState.showMessage(
-        title: appLocalizations.tip,
-        message: TextSpan(text: message),
-      );
-      return;
-    }
-    if (context.mounted) {
-      Navigator.of(context).pop(data);
-    }
-  }
 
-  // Mask sensitive content in YAML files before displaying in editor
-  String _maskSensitiveContent(String content) {
-    // Use RegExp to find and mask sensitive fields
-    final serverRegex = RegExp(r'(\s*server:\s*)([^\s#]+)', multiLine: true);
-    final portRegex = RegExp(r'(\s*port:\s*)(\d+)', multiLine: true);
-    final usernameRegex = RegExp(r'(\s*username:\s*)([^\s#]+)', multiLine: true);
-    final passwordRegex = RegExp(r'(\s*password:\s*)([^\s#]+)', multiLine: true);
-    
-    // Replace with masked values but preserve formatting
-    content = content.replaceAllMapped(serverRegex, (match) => '${match.group(1)}*****');
-    content = content.replaceAllMapped(portRegex, (match) => '${match.group(1)}*****');
-    content = content.replaceAllMapped(usernameRegex, (match) => '${match.group(1)}*****');
-    content = content.replaceAllMapped(passwordRegex, (match) => '${match.group(1)}*****');
-    
-    return content;
-  }
-
-  // Store original unmasked content
-  String? _originalContent;
-
-  _editProfileFile() async {
-    if (_originalContent == null) {
-      _originalContent = await profile.getFileContent();
-      rawText = _maskSensitiveContent(_originalContent!);
-    }
-    
-    if (!mounted) return;
-    final title = widget.profile.label ?? widget.profile.id ?? "Profile";
-    
-    // Show masked content in the editor
-    final data = await BaseNavigator.push<String>(
-      globalState.homeScaffoldKey.currentContext!,
-      EditorPage(
-        title: title,
-        content: rawText!,
-        onSave: (context, editedContent) {
-          // Silently keep masked fields from original content
-          // while preserving user edits to non-sensitive fields
-          String mergedContent = _preserveOriginalSensitiveData(editedContent, _originalContent!);
-          _handleSaveEdit(context, mergedContent);
-        },
-        onPop: (context, data) async {
-          if (data == rawText) {
-            return true;
-          }
-          final res = await globalState.showMessage(
-            title: title,
-            message: TextSpan(
-              text: appLocalizations.hasCacheChange,
-            ),
-          );
-          if (res == true && context.mounted) {
-            // Merge changes without warning
-            String mergedContent = _preserveOriginalSensitiveData(data, _originalContent!);
-            _handleSaveEdit(context, mergedContent);
-          } else {
-            return true;
-          }
-          return false;
-        },
-      ),
-    );
-    
-    if (data == null) {
-      return;
-    }
-    
-    // Update with original (unmasked) content plus user edits to non-sensitive fields
-    String mergedContent = _preserveOriginalSensitiveData(data, _originalContent!);
-    _originalContent = mergedContent;
-    rawText = _maskSensitiveContent(mergedContent);
-    fileData = Uint8List.fromList(utf8.encode(mergedContent));
-    fileInfoNotifier.value = fileInfoNotifier.value?.copyWith(
-      size: fileData?.length ?? 0,
-      lastModified: DateTime.now(),
-    );
-  }
-
-  // Preserve original sensitive data while keeping user edits to non-sensitive fields
-  String _preserveOriginalSensitiveData(String editedContent, String originalContent) {
-    // Parse YAML line by line to preserve non-sensitive edits while keeping sensitive data
-    final originalLines = originalContent.split('\n');
-    final editedLines = editedContent.split('\n');
-    final result = <String>[];
-    
-    // Map to track sensitive field line numbers from the original
-    final sensitiveLineIndices = <int>{};
-    
-    // Identify sensitive lines in the original content
-    for (int i = 0; i < originalLines.length; i++) {
-      final line = originalLines[i];
-      if (_isSensitiveLine(line)) {
-        sensitiveLineIndices.add(i);
-      }
-    }
-    
-    // Build a new merged content with original sensitive lines and edited non-sensitive lines
-    // For simplicity, we're using line numbers, assuming the structure hasn't changed too much
-    for (int i = 0; i < editedLines.length; i++) {
-      // If this is a known sensitive line index (adjusted for possible changed line count)
-      if (i < originalLines.length && sensitiveLineIndices.contains(i)) {
-        // Use the original line that contains real unmasked sensitive data
-        result.add(originalLines[i]);
-      } else {
-        // Use the user's edited line for non-sensitive data
-        result.add(editedLines[i]);
-      }
-    }
-    
-    // Include any remaining original lines if the user's edit is shorter
-    if (originalLines.length > editedLines.length) {
-      for (int i = editedLines.length; i < originalLines.length; i++) {
-        result.add(originalLines[i]);
-      }
-    }
-    
-    return result.join('\n');
-  }
-  
-  // Check if a line contains sensitive information
-  bool _isSensitiveLine(String line) {
-    final sensitiveFields = [
-      RegExp(r'^\s*server:\s*'),
-      RegExp(r'^\s*port:\s*'),
-      RegExp(r'^\s*username:\s*'),
-      RegExp(r'^\s*password:\s*'),
-    ];
-    
-    for (final regex in sensitiveFields) {
-      if (regex.hasMatch(line)) {
-        return true;
-      }
-    }
-    
-    return false;
-  }
-
-  _uploadProfileFile() async {
-    final platformFile = await globalState.safeRun(picker.pickerFile);
-    if (platformFile?.bytes == null) return;
-    fileData = platformFile?.bytes;
-    fileInfoNotifier.value = fileInfoNotifier.value?.copyWith(
-      size: fileData?.length ?? 0,
-      lastModified: DateTime.now(),
-    );
-  }
 
   _handleBack() async {
     final res = await globalState.showMessage(
@@ -557,37 +389,7 @@ class _EditProfileState extends State<EditProfile> with SingleTickerProviderStat
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: _editProfileFile,
-                                icon: const Icon(Icons.edit_rounded),
-                                label: Text(appLocalizations.edit),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: FilledButton.icon(
-                                onPressed: _uploadProfileFile,
-                                icon: const Icon(Icons.upload_rounded),
-                                label: Text(appLocalizations.upload),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+
                       ],
                     ),
                   ),
