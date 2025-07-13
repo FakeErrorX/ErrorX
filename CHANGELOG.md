@@ -1,3 +1,7 @@
+## v1.0.1
+- Added BDIX FTP Support
+- Fix License Re-entry issues
+
 ## v1.0.0
 - Added support for: Windows ARM64, Linux ARM64, macOS ARM64, Android
 - Core: Performance optimization, stability improvements, storage corruption detection
