@@ -1,3 +1,11 @@
+## v1.0.2
+- Added AES-256 encryption in Go core with secure profile storage
+- Switched to in-memory encryption; removed temp file decryption
+- Refactored profile handling for always-encrypted disk storage
+- Removed YAML profile editor and related code
+- Revamped login UI with modern design
+- Improved error handling, retry logic, and settings defaults
+
 ## v1.0.1
 - Added BDIX FTP Support
 - Fix License Re-entry issues
