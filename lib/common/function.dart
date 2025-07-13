@@ -72,14 +72,58 @@ Future<T> retry<T>({
   Duration delay = Duration.zero,
 }) async {
   int attempts = 0;
+  Exception? lastException;
+  T? lastResult;
+
   while (attempts < maxAttempts) {
-    final res = await task();
-    if (!retryIf(res) || attempts >= maxAttempts) {
-      return res;
+    try {
+      final res = await task();
+      lastResult = res;
+      
+      // If we shouldn't retry based on the result, return immediately
+      if (!retryIf(res)) {
+        return res;
+      }
+      
+      attempts++;
+      
+      // If this was our last attempt, break the loop
+      if (attempts >= maxAttempts) {
+        break;
+      }
+      
+      // Wait before retrying if delay is specified
+      if (delay > Duration.zero) {
+        await Future.delayed(delay);
+      }
+    } catch (e) {
+      lastException = e is Exception ? e : Exception(e.toString());
+      attempts++;
+      
+      // If this was our last attempt, break the loop
+      if (attempts >= maxAttempts) {
+        break;
+      }
+      
+      // Wait before retrying if delay is specified
+      if (delay > Duration.zero) {
+        await Future.delayed(delay);
+      }
     }
-    attempts++;
   }
-  throw "unknown error";
+  
+  // If we have an exception from the last attempt, throw it
+  if (lastException != null) {
+    throw lastException!;
+  }
+  
+  // If we have a result but it didn't meet our criteria, return it anyway
+  if (lastResult != null) {
+    return lastResult!;
+  }
+  
+  // This should not happen, but provide a meaningful error message
+  throw Exception("Retry failed after $maxAttempts attempts with no result or exception captured");
 }
 
 final debouncer = Debouncer();

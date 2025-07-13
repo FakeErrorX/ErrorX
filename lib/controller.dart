@@ -12,6 +12,7 @@ import 'package:errorx/enum/enum.dart';
 import 'package:errorx/providers/providers.dart';
 import 'package:errorx/state.dart';
 import 'package:errorx/widgets/dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
@@ -259,9 +260,9 @@ class AppController {
     final profile = _ref.watch(currentProfileProvider);
     await _ref.read(currentProfileProvider)?.checkAndUpdate();
     
-    // Temporarily decrypt the profile file for Clash Core to read
+    // Ensure Go encryption is initialized instead of temporary decryption
     if (profile != null) {
-      await profile.temporarilyDecryptForCore();
+      await Profile.ensureGoEncryptionInitialized();
     }
     
     final patchConfig = _ref.read(patchClashConfigProvider);
@@ -308,48 +309,29 @@ class AppController {
     }
   }
 
-  // Enhanced version to ensure current profile is decrypted for Clash Core
+  // Enhanced version to ensure current profile is ready for Clash Core
   Future<void> ensureCurrentProfileDecrypted() async {
     final currentProfile = _ref.read(currentProfileProvider);
     if (currentProfile != null) {
       try {
-        // First prepare the profile in memory
-        await currentProfile.prepareForClashCore();
+        // Initialize Go encryption instead of temporary decryption
+        await Profile.ensureGoEncryptionInitialized();
         
-        // Then decrypt on disk for Clash Core operations
-        await currentProfile.temporarilyDecryptForCore();
+        // Prepare the profile in memory
+        await currentProfile.prepareForClashCore();
       } catch (e) {
-        commonPrint.log("Failed to decrypt current profile: $e");
+        commonPrint.log("Failed to prepare current profile: $e");
       }
     }
   }
 
-  // Ensure all profiles are safely encrypted before app exits
+  // Ensure all profiles are properly encrypted before app exits
   Future<void> ensureAllProfilesEncrypted() async {
-    final profiles = _ref.read(profilesProvider);
-    for (final profile in profiles) {
-      try {
-        // Get the file path
-        final profilePath = await appPath.getProfilePath(profile.id);
-        if (profilePath == null) continue;
-        
-        final file = File(profilePath);
-        if (!await file.exists()) continue;
-        
-        // Check if file is currently encrypted
-        final bytes = await file.readAsBytes();
-        if (!EncryptionService.hasEncryptionHeader(bytes) && 
-            EncryptionService.isProfileCached(profile.id)) {
-          // File is decrypted but we have the cached version, re-encrypt immediately
-          final cachedBytes = EncryptionService.getCachedProfile(profile.id)!;
-          final encryptedBytes = EncryptionService.encrypt(cachedBytes);
-          await file.writeAsBytes(encryptedBytes);
-          commonPrint.log("Re-encrypted profile ${profile.id} before exit");
-        }
-      } catch (e) {
-        commonPrint.log("Failed to ensure encryption for profile ${profile.id}: $e");
-      }
-    }
+    // With the new system, profiles are always encrypted on disk
+    // No need for re-encryption since we never decrypt to disk
+    // Just clear the in-memory cache
+    EncryptionService.clearAllCache();
+    commonPrint.log("Cleared all profile caches before exit");
   }
 
   Future _applyProfile() async {
@@ -406,15 +388,30 @@ class AppController {
   }
 
   Future<void> updateGroups() async {
-    // Ensure the current profile is decrypted for Clash Core operations
-    await ensureCurrentProfileDecrypted();
-    
-    _ref.read(groupsProvider.notifier).value = await retry(
-      task: () async {
-        return await clashCore.getProxiesGroups();
-      },
-      retryIf: (res) => res.isEmpty,
-    );
+    try {
+      // Ensure the current profile is decrypted for Clash Core operations
+      await ensureCurrentProfileDecrypted();
+      
+      _ref.read(groupsProvider.notifier).value = await retry(
+        task: () async {
+          return await clashCore.getProxiesGroups();
+        },
+        retryIf: (res) => res.isEmpty,
+        maxAttempts: 3,
+        delay: const Duration(milliseconds: 500),
+      );
+    } catch (e) {
+      // Log the error for debugging
+      if (kDebugMode) {
+        print('Error updating groups: $e');
+      }
+      
+      // Set empty groups on error to prevent UI issues
+      _ref.read(groupsProvider.notifier).value = <Group>[];
+      
+      // Re-throw the error if needed for upstream handling
+      rethrow;
+    }
   }
 
   updateProfiles() async {
@@ -552,6 +549,9 @@ class AppController {
         globalState.getCoreState(),
       );
       await clashCore.init();
+      
+      // Initialize Go encryption service after core init
+      await Profile.ensureGoEncryptionInitialized();
     }
     await applyProfile();
   }

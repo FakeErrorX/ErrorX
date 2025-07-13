@@ -49,18 +49,18 @@ class _OverrideProfileState extends State<OverrideProfile> with SingleTickerProv
   _initState(WidgetRef ref) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(Duration(milliseconds: 300), () async {
-        // First ensure the profile is decrypted for core operations
+        // Initialize Go encryption instead of temporary decryption
         try {
-          // Get the profile by ID and ensure it's decrypted
+          await Profile.ensureGoEncryptionInitialized();
+          
+          // Get the profile by ID and ensure it's prepared in memory
           final profiles = ref.read(profilesProvider);
           final profileIndex = profiles.indexWhere((p) => p.id == widget.profileId);
           
           if (profileIndex >= 0) {
             final profile = profiles[profileIndex];
-            // First prepare the profile in memory
+            // Prepare the profile in memory
             await profile.prepareForClashCore();
-            // Then temporarily decrypt it for Clash Core to read
-            await profile.temporarilyDecryptForCore();
           }
         } catch (e) {
           commonPrint.log("Failed to prepare profile for override: $e");
@@ -891,16 +891,16 @@ class RuleContent extends ConsumerWidget {
                   : FilledButton.icon(
                       onPressed: () async {
                         try {
-                          // Make sure the profile is decrypted for Clash Core to read
+                          // Initialize Go encryption instead of temporary decryption
+                          await Profile.ensureGoEncryptionInitialized();
+                          
                           final profiles = ref.read(profilesProvider);
                           final profileIndex = profiles.indexWhere((p) => p.id == profileId);
                           
                           if (profileIndex >= 0) {
                             final profile = profiles[profileIndex];
-                            // First prepare the profile in memory
+                            // Prepare the profile in memory
                             await profile.prepareForClashCore();
-                            // Then temporarily decrypt it for Clash Core to read
-                            await profile.temporarilyDecryptForCore();
                           }
                           
                           // Now get the rules from core
