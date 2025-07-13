@@ -12,6 +12,7 @@ import 'package:errorx/enum/enum.dart';
 import 'package:errorx/providers/providers.dart';
 import 'package:errorx/state.dart';
 import 'package:errorx/widgets/dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
@@ -387,15 +388,30 @@ class AppController {
   }
 
   Future<void> updateGroups() async {
-    // Ensure the current profile is decrypted for Clash Core operations
-    await ensureCurrentProfileDecrypted();
-    
-    _ref.read(groupsProvider.notifier).value = await retry(
-      task: () async {
-        return await clashCore.getProxiesGroups();
-      },
-      retryIf: (res) => res.isEmpty,
-    );
+    try {
+      // Ensure the current profile is decrypted for Clash Core operations
+      await ensureCurrentProfileDecrypted();
+      
+      _ref.read(groupsProvider.notifier).value = await retry(
+        task: () async {
+          return await clashCore.getProxiesGroups();
+        },
+        retryIf: (res) => res.isEmpty,
+        maxAttempts: 3,
+        delay: const Duration(milliseconds: 500),
+      );
+    } catch (e) {
+      // Log the error for debugging
+      if (kDebugMode) {
+        print('Error updating groups: $e');
+      }
+      
+      // Set empty groups on error to prevent UI issues
+      _ref.read(groupsProvider.notifier).value = <Group>[];
+      
+      // Re-throw the error if needed for upstream handling
+      rethrow;
+    }
   }
 
   updateProfiles() async {

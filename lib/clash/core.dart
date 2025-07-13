@@ -94,31 +94,63 @@ class ClashCore {
   Future<List<Group>> getProxiesGroups() async {
     final proxiesRawString = await clashInterface.getProxies();
     return Isolate.run<List<Group>>(() {
-      if (proxiesRawString.isEmpty) return [];
-      final proxies = (json.decode(proxiesRawString) ?? {}) as Map;
-      if (proxies.isEmpty) return [];
-      final groupNames = [
-        UsedProxy.GLOBAL.name,
-        ...(proxies[UsedProxy.GLOBAL.name]["all"] as List).where((e) {
-          final proxy = proxies[e] ?? {};
-          return GroupTypeExtension.valueList.contains(proxy['type']);
-        })
-      ];
-      final groupsRaw = groupNames.map((groupName) {
-        final group = proxies[groupName];
-        group["all"] = ((group["all"] ?? []) as List)
-            .map(
-              (name) => proxies[name],
-            )
-            .where((proxy) => proxy != null)
+      try {
+        if (proxiesRawString.isEmpty) return <Group>[];
+        
+        final dynamic decodedJson = json.decode(proxiesRawString);
+        if (decodedJson == null) return <Group>[];
+        
+        final proxies = decodedJson as Map<String, dynamic>;
+        if (proxies.isEmpty) return <Group>[];
+        
+        // Check if GLOBAL proxy exists
+        final globalProxy = proxies[UsedProxy.GLOBAL.name];
+        if (globalProxy == null) return <Group>[];
+        
+        final globalAll = globalProxy["all"];
+        if (globalAll == null || globalAll is! List) return <Group>[];
+        
+        final groupNames = [
+          UsedProxy.GLOBAL.name,
+          ...globalAll.where((e) {
+            if (e == null) return false;
+            final proxy = proxies[e];
+            if (proxy == null || proxy is! Map) return false;
+            final proxyType = proxy['type'];
+            return proxyType != null && GroupTypeExtension.valueList.contains(proxyType);
+          })
+        ];
+        
+        final groupsRaw = groupNames.map((groupName) {
+          final group = Map<String, dynamic>.from(proxies[groupName] ?? {});
+          final groupAll = group["all"];
+          if (groupAll is List) {
+            group["all"] = groupAll
+                .map((name) => proxies[name])
+                .where((proxy) => proxy != null)
+                .toList();
+          } else {
+            group["all"] = <dynamic>[];
+          }
+          return group;
+        }).toList();
+        
+        return groupsRaw
+            .map((e) {
+              try {
+                return Group.fromJson(e);
+              } catch (parseError) {
+                // Skip malformed group data
+                return null;
+              }
+            })
+            .where((group) => group != null)
+            .cast<Group>()
             .toList();
-        return group;
-      }).toList();
-      return groupsRaw
-          .map(
-            (e) => Group.fromJson(e),
-          )
-          .toList();
+      } catch (e) {
+        // Return empty list on any parsing error
+        return <Group>[];
+      }
     });
   }
 

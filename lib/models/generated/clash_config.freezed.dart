@@ -3217,7 +3217,7 @@ class _$ClashConfigImpl implements _ClashConfig {
       final List<String> rule = const [],
       @JsonKey(name: "global-ua") this.globalUa,
       @JsonKey(name: "external-controller")
-      this.externalController = ExternalControllerStatus.open,
+      this.externalController = ExternalControllerStatus.close,
       final Map<String, String> hosts = const {}})
       : _proxyGroups = proxyGroups,
         _rule = rule,
