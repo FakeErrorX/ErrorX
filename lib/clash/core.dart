@@ -69,6 +69,10 @@ class ClashCore {
     return await clashInterface.init(homeDirPath);
   }
 
+  Future<bool> initEncryption(String encryptionKey) async {
+    return await clashInterface.initEncryption(encryptionKey);
+  }
+
   Future<bool> setState(CoreState state) async {
     return await clashInterface.setState(state);
   }

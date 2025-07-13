@@ -80,6 +80,18 @@ class Profile with _$Profile {
       autoUpdateDuration: defaultUpdateDuration,
     );
   }
+
+  /// Ensures that the Go core is initialized with encryption capability
+  /// This eliminates the need for temporary decryption to disk
+  static Future<void> ensureGoEncryptionInitialized() async {
+    if (!EncryptionService.isGoEncryptionInitialized) {
+      final success = await EncryptionService.initializeGoEncryption();
+      if (!success) {
+        throw Exception('Failed to initialize Go encryption service');
+      }
+      EncryptionService.markGoEncryptionInitialized();
+    }
+  }
 }
 
 @freezed
@@ -310,42 +322,8 @@ extension ProfileExtension on Profile {
     }
   }
 
-  /// Creates a temporary decrypted version for Clash Core to read
-  /// This is necessary because Clash Core expects to read from disk directly
-  /// The file will be automatically re-encrypted immediately after core access
+  @Deprecated('Use ensureGoEncryptionInitialized instead - this method creates security vulnerability')
   Future<void> temporarilyDecryptForCore() async {
-    final file = await getFile();
-    final bytes = await file.readAsBytes();
-    
-    // Check if already cached, if not, decrypt and cache
-    Uint8List decryptedBytes;
-    if (EncryptionService.isProfileCached(id)) {
-      decryptedBytes = EncryptionService.getCachedProfile(id)!;
-    } else {
-      decryptedBytes = await EncryptionService.decryptAndCacheProfile(id, bytes);
-    }
-    
-    // Only decrypt if the file is currently encrypted (check header)
-    if (EncryptionService.hasEncryptionHeader(bytes)) {
-      // Write decrypted data to disk for Clash Core to read
-      await file.writeAsBytes(decryptedBytes);
-      
-      // Re-encrypt IMMEDIATELY after a minimal delay (50ms)
-      // This minimizes the window where unencrypted data exists on disk
-      Future.delayed(const Duration(milliseconds: 50), () async {
-        try {
-          // Verify the file hasn't been modified by another process and needs re-encryption
-          final currentBytes = await file.readAsBytes();
-          final needsReEncryption = !EncryptionService.hasEncryptionHeader(currentBytes);
-          
-          if (needsReEncryption) {
-            final encryptedBytes = EncryptionService.encrypt(decryptedBytes);
-            await file.writeAsBytes(encryptedBytes);
-          }
-        } catch (e) {
-          commonPrint.log("Error re-encrypting profile: $e");
-        }
-      });
-    }
+    throw UnimplementedError('Use ensureGoEncryptionInitialized instead');
   }
 }

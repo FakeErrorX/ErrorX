@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"core/encryption"
 	"errors"
 	"fmt"
 	"github.com/metacubex/mihomo/adapter"
@@ -45,6 +46,7 @@ var (
 	runLock   sync.Mutex
 	ips       = []string{"ipwho.is", "api.ip.sb", "ipapi.co", "ipinfo.io"}
 	b, _      = batch.New[bool](context.Background(), batch.WithConcurrencyNum[bool](50))
+	encryptionService *encryption.EncryptionService
 )
 
 type ExternalProviders []ExternalProvider
@@ -52,6 +54,24 @@ type ExternalProviders []ExternalProvider
 func (a ExternalProviders) Len() int           { return len(a) }
 func (a ExternalProviders) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a ExternalProviders) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
+// initEncryption initializes the encryption service with the given key
+func initEncryption(keyString string) error {
+	// Create a 32-byte key from the key string (same as Dart implementation)
+	keyBytes := []byte(keyString)
+	if len(keyBytes) > 32 {
+		keyBytes = keyBytes[:32]
+	} else if len(keyBytes) < 32 {
+		// Pad with zeros if too short
+		padded := make([]byte, 32)
+		copy(padded, keyBytes)
+		keyBytes = padded
+	}
+	
+	var err error
+	encryptionService, err = encryption.NewEncryptionService(keyBytes)
+	return err
+}
 
 func readFile(path string) ([]byte, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -65,6 +85,31 @@ func readFile(path string) ([]byte, error) {
 	return data, err
 }
 
+// readEncryptedProfileFile reads and decrypts a profile file
+func readEncryptedProfileFile(path string) ([]byte, error) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil, err
+	}
+	
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	
+	// If encryption service is not initialized, return raw data
+	if encryptionService == nil {
+		return data, nil
+	}
+	
+	// Decrypt the data if it's encrypted
+	decryptedData, err := encryptionService.Decrypt(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt profile: %v", err)
+	}
+	
+	return decryptedData, nil
+}
+
 func getProfilePath(id string) string {
 	return filepath.Join(constant.Path.HomeDir(), "profiles", id+".yaml")
 }
@@ -75,9 +120,9 @@ func getProfileProvidersPath(id string) string {
 
 func getRawConfigWithId(id string) *config.RawConfig {
 	path := getProfilePath(id)
-	bytes, err := readFile(path)
+	bytes, err := readEncryptedProfileFile(path)
 	if err != nil {
-		log.Errorln("profile is not exist")
+		log.Errorln("profile is not exist or failed to decrypt: %v", err)
 		return config.DefaultRawConfig()
 	}
 	prof, err := config.UnmarshalRawConfig(bytes)

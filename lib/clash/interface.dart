@@ -9,6 +9,8 @@ import 'package:errorx/models/models.dart';
 mixin ClashInterface {
   Future<bool> init(String homeDir);
 
+  Future<bool> initEncryption(String encryptionKey);
+
   Future<bool> preload();
 
   Future<bool> shutdown();
@@ -98,6 +100,7 @@ abstract class ClashHandlerInterface with ClashInterface {
     try {
       switch (result.method) {
         case ActionMethod.initClash:
+        case ActionMethod.initEncryption:
         case ActionMethod.shutdown:
         case ActionMethod.getIsInit:
         case ActionMethod.startListener:
@@ -195,6 +198,14 @@ abstract class ClashHandlerInterface with ClashInterface {
     return invoke<bool>(
       method: ActionMethod.initClash,
       data: homeDir,
+    );
+  }
+
+  @override
+  Future<bool> initEncryption(String encryptionKey) {
+    return invoke<bool>(
+      method: ActionMethod.initEncryption,
+      data: encryptionKey,
     );
   }
 

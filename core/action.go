@@ -158,9 +158,16 @@ func handleAction(action *Action, result func(data interface{})) {
 		return
 	case getProfileMethod:
 		profileId := action.Data.(string)
-		handleGetMemory(func(value string) {
-			result(handleGetProfile(profileId))
-		})
+		result(handleGetProfile(profileId))
+		return
+	case initEncryptionMethod:
+		encryptionKey := action.Data.(string)
+		err := initEncryption(encryptionKey)
+		if err != nil {
+			result(false)
+		} else {
+			result(true)
+		}
 		return
 	case setStateMethod:
 		data := action.Data.(string)
