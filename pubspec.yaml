@@ -43,6 +43,7 @@ dependencies:
   archive: ^3.6.1
   lpinyin: ^2.0.3
   emoji_regex: ^0.0.5
+  flutter_svg: ^2.0.0
   cached_network_image: ^3.4.0
   hotkey_manager: ^0.2.3
   uni_platform: ^0.1.3

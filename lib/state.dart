@@ -64,7 +64,7 @@ class GlobalState {
           themeProps: defaultThemeProps,
           patchClashConfig: ClashConfig(
             findProcessMode: FindProcessMode.always,
-            externalController: ExternalControllerStatus.open,
+            externalController: ExternalControllerStatus.close,
           ),
         );
     await globalState.migrateOldData(config);
