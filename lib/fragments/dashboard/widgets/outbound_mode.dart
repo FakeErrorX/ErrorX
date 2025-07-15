@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'outbound_mode_info_dialog.dart';
+
 class OutboundMode extends StatelessWidget {
   const OutboundMode({super.key});
 
@@ -25,6 +27,24 @@ class OutboundMode extends StatelessWidget {
               label: appLocalizations.outboundMode,
               iconData: Icons.call_split_sharp,
             ),
+            actions: [
+              IconButton(
+                onPressed: () {
+                  globalState.showCommonDialog(
+                    child: const OutboundModeInfoDialog(),
+                  );
+                },
+                icon: const Icon(Icons.info_outline),
+                iconSize: 14,
+                tooltip: "Mode Information",
+                style: IconButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  minimumSize: const Size(20, 20),
+                  maximumSize: const Size(20, 20),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ],
             child: Padding(
               padding: const EdgeInsets.only(
                 top: 12,

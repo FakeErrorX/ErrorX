@@ -2884,6 +2884,36 @@ class AppLocalizations {
       args: [],
     );
   }
+
+  /// `Rule mode routes traffic based on defined rules. This is the recommended mode for optimal performance and flexibility.`
+  String get ruleModeDesc {
+    return Intl.message(
+      'Rule mode routes traffic based on defined rules. This is the recommended mode for optimal performance and flexibility.',
+      name: 'ruleModeDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Global mode routes all traffic through the selected proxy. Use this when you want all connections to go through the proxy.`
+  String get globalModeDesc {
+    return Intl.message(
+      'Global mode routes all traffic through the selected proxy. Use this when you want all connections to go through the proxy.',
+      name: 'globalModeDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Direct mode bypasses the proxy and connects directly to the destination. Use this when you want to disable proxy for all connections.`
+  String get directModeDesc {
+    return Intl.message(
+      'Direct mode bypasses the proxy and connects directly to the destination. Use this when you want to disable proxy for all connections.',
+      name: 'directModeDesc',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {
