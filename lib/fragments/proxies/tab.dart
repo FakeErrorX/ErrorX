@@ -50,15 +50,48 @@ class ProxiesTabFragmentState extends ConsumerState<ProxiesTabFragment>
     return Consumer(
       builder: (_, ref, ___) {
         final isMobileView = ref.watch(isMobileViewProvider);
-        return IconButton(
-          onPressed: _showMoreMenu,
-          icon: isMobileView
-              ? const Icon(
-                  Icons.expand_more,
-                )
-              : const Icon(
-                  Icons.chevron_right,
+        return Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                context.colorScheme.primaryContainer.withOpacity(0.8),
+                context.colorScheme.secondaryContainer.withOpacity(0.6),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: context.colorScheme.primary.withOpacity(0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: context.colorScheme.shadow.withOpacity(0.1),
+                blurRadius: 6,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: _showMoreMenu,
+              borderRadius: BorderRadius.circular(12),
+              splashColor: context.colorScheme.primary.withOpacity(0.1),
+              child: Center(
+                child: Icon(
+                  isMobileView ? Icons.expand_more_rounded : Icons.chevron_right_rounded,
+                  color: context.colorScheme.primary,
+                  size: 20,
                 ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -73,40 +106,175 @@ class ProxiesTabFragmentState extends ConsumerState<ProxiesTabFragment>
       builder: (_, type) {
         return AdaptiveSheetScaffold(
           type: type,
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Consumer(
-              builder: (_, ref, __) {
-                final state = ref.watch(proxiesSelectorStateProvider);
-                return SizedBox(
-                  width: double.infinity,
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    runSpacing: 8,
-                    spacing: 8,
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  context.colorScheme.surface.withOpacity(0.9),
+                  context.colorScheme.surfaceVariant.withOpacity(0.3),
+                ],
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Consumer(
+                builder: (_, ref, __) {
+                  final state = ref.watch(proxiesSelectorStateProvider);
+                  return Column(
                     children: [
-                      for (final groupName in state.groupNames)
-                        SettingTextCard(
-                          groupName,
-                          onPressed: () {
-                            final index = state.groupNames.indexWhere(
-                              (item) => item == groupName,
-                            );
-                            if (index == -1) return;
-                            _tabController?.animateTo(index);
-                            globalState.appController
-                                .updateCurrentGroupName(groupName);
-                            Navigator.of(context).pop();
-                          },
-                          isSelected: groupName == state.currentGroupName,
-                        )
+                      // Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    context.colorScheme.primary.withOpacity(0.8),
+                                    context.colorScheme.tertiary.withOpacity(0.6),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.hub_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    appLocalizations.proxyGroup,
+                                    style: context.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    "Select a proxy group",
+                                    style: context.textTheme.bodyMedium?.copyWith(
+                                      color: context.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Group selection grid
+                      SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          runSpacing: 12,
+                          spacing: 12,
+                          children: [                          for (final groupName in state.groupNames)
+                            _buildGroupChip(context, groupName, state.currentGroupName),
+                          ],
+                        ),
+                      ),
                     ],
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
           title: appLocalizations.proxyGroup,
+        );
+      },
+    );
+  }
+
+  Widget _buildGroupChip(BuildContext context, String groupName, String? currentGroupName) {
+    final isSelected = groupName == currentGroupName;
+    
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 200),
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: 0.8 + (0.2 * value),
+          child: Opacity(
+            opacity: value.clamp(0.0, 1.0),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: () {
+                  final index = ref.read(proxiesSelectorStateProvider).groupNames.indexWhere(
+                    (item) => item == groupName,
+                  );
+                  if (index == -1) return;
+                  _tabController?.animateTo(index);
+                  globalState.appController.updateCurrentGroupName(groupName);
+                  Navigator.of(context).pop();
+                },
+                borderRadius: BorderRadius.circular(16),
+                splashColor: context.colorScheme.primary.withOpacity(0.1),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: isSelected ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        context.colorScheme.primary.withOpacity(0.8),
+                        context.colorScheme.tertiary.withOpacity(0.6),
+                      ],
+                    ) : null,
+                    color: isSelected ? null : context.colorScheme.surfaceVariant.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected 
+                          ? context.colorScheme.primary.withOpacity(0.3)
+                          : context.colorScheme.outline.withOpacity(0.2),
+                      width: 1.5,
+                    ),
+                    boxShadow: isSelected ? [
+                      BoxShadow(
+                        color: context.colorScheme.primary.withOpacity(0.2),
+                        blurRadius: 8,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 2),
+                      ),
+                    ] : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isSelected) ...[
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        groupName,
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: isSelected ? Colors.white : context.colorScheme.onSurfaceVariant,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -200,59 +368,113 @@ class ProxiesTabFragmentState extends ConsumerState<ProxiesTabFragment>
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        NotificationListener<ScrollMetricsNotification>(
-          onNotification: (scrollNotification) {
-            _hasMoreButtonNotifier.value =
-                scrollNotification.metrics.maxScrollExtent > 0;
-            return true;
-          },
-          child: ValueListenableBuilder(
-            valueListenable: _hasMoreButtonNotifier,
-            builder: (_, value, child) {
-              return Stack(
-                alignment: AlignmentDirectional.centerStart,
-                children: [
-                  TabBar(
-                    controller: _tabController,
-                    padding: EdgeInsets.only(
-                      left: 16,
-                      right: 16 + (value ? 16 : 0),
-                    ),
-                    dividerColor: Colors.transparent,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    overlayColor:
-                        const WidgetStatePropertyAll(Colors.transparent),
-                    tabs: [
-                      for (final groupName in groupNames)
-                        Tab(
-                          text: groupName,
-                        ),
-                    ],
-                  ),
-                  if (value)
-                    Positioned(
-                      right: 0,
-                      child: child!,
-                    ),
-                ],
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      context.colorScheme.surface.opacity10,
-                      context.colorScheme.surface,
-                    ],
-                    stops: const [
-                      0.0,
-                      0.1
-                    ]),
+        // Modern tab bar with glassmorphism
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                context.colorScheme.surface.withOpacity(0.9),
+                context.colorScheme.surface.withOpacity(0.7),
+              ],
+            ),
+            border: Border(
+              bottom: BorderSide(
+                color: context.colorScheme.outline.withOpacity(0.1),
+                width: 1,
               ),
-              child: _buildMoreButton(),
+            ),
+          ),
+          child: NotificationListener<ScrollMetricsNotification>(
+            onNotification: (scrollNotification) {
+              _hasMoreButtonNotifier.value =
+                  scrollNotification.metrics.maxScrollExtent > 0;
+              return true;
+            },
+            child: ValueListenableBuilder(
+              valueListenable: _hasMoreButtonNotifier,
+              builder: (_, value, child) {
+                return Stack(
+                  alignment: AlignmentDirectional.centerStart,
+                  children: [
+                    TabBar(
+                      controller: _tabController,
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16 + (value ? 56 : 0),
+                        top: 8,
+                        bottom: 8,
+                      ),
+                      dividerColor: Colors.transparent,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      overlayColor: WidgetStateProperty.all(Colors.transparent),
+                      indicator: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            context.colorScheme.primary.withOpacity(0.8),
+                            context.colorScheme.tertiary.withOpacity(0.6),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.colorScheme.primary.withOpacity(0.2),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      labelStyle: context.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                      ),
+                      unselectedLabelStyle: context.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                      labelColor: Colors.white,
+                      unselectedLabelColor: context.colorScheme.onSurfaceVariant,
+                      tabs: [
+                        for (final groupName in groupNames)
+                          Tab(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              child: Text(groupName),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (value)
+                      Positioned(
+                        right: 8,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                context.colorScheme.surface.withOpacity(0.0),
+                                context.colorScheme.surface.withOpacity(0.9),
+                              ],
+                              stops: const [0.0, 0.3],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.only(left: 16),
+                          child: _buildMoreButton(),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -323,36 +545,62 @@ class ProxyGroupViewState extends ConsumerState<ProxyGroupView> {
       proxies,
       state.testUrl,
     );
-    return Align(
-      alignment: Alignment.topCenter,
-      child: CommonAutoHiddenScrollBar(
-        controller: _controller,
-        child: GridView.builder(
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.colorScheme.surface.withOpacity(0.5),
+            context.colorScheme.surfaceVariant.withOpacity(0.2),
+          ],
+        ),
+      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: CommonAutoHiddenScrollBar(
           controller: _controller,
-          padding: const EdgeInsets.only(
-            top: 16,
-            left: 16,
-            right: 16,
-            bottom: 96,
+          child: GridView.builder(
+            controller: _controller,
+            padding: const EdgeInsets.only(
+              top: 24,
+              left: 16,
+              right: 16,
+              bottom: 120,
+            ),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              mainAxisExtent: getItemHeight(proxyCardType),
+            ),
+            itemCount: sortedProxies.length,
+            itemBuilder: (_, index) {
+              final proxy = sortedProxies[index];
+              return TweenAnimationBuilder<double>(
+                duration: Duration(milliseconds: 300 + (index * 50)),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                curve: Curves.easeOutBack,
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value.clamp(0.0, 1.0),
+                      child: ProxyCard(
+                        testUrl: state.testUrl,
+                        groupType: state.groupType,
+                        type: proxyCardType,
+                        key: ValueKey('$groupName.${proxy.name}'),
+                        proxy: proxy,
+                        groupName: groupName,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            mainAxisExtent: getItemHeight(proxyCardType),
-          ),
-          itemCount: sortedProxies.length,
-          itemBuilder: (_, index) {
-            final proxy = sortedProxies[index];
-            return ProxyCard(
-              testUrl: state.testUrl,
-              groupType: state.groupType,
-              type: proxyCardType,
-              key: ValueKey('$groupName.${proxy.name}'),
-              proxy: proxy,
-              groupName: groupName,
-            );
-          },
         ),
       ),
     );
@@ -421,20 +669,79 @@ class _DelayTestButtonState extends State<DelayTestButton>
     return AnimatedBuilder(
       animation: _controller.view,
       builder: (_, child) {
-        return SizedBox(
-          width: 56,
-          height: 56,
-          child: Transform.scale(
-            scale: _scale.value,
-            child: child,
-          ),
+        return TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 300),
+          tween: Tween<double>(begin: 0.0, end: _controller.isAnimating ? 0.0 : 1.0),
+          curve: Curves.easeOutBack,
+          builder: (context, scaleValue, child) {
+            return Transform.scale(
+              scale: _scale.value + (scaleValue * 0.1),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      context.colorScheme.primary,
+                      context.colorScheme.tertiary,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 12,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    onTap: _healthcheck,
+                    borderRadius: BorderRadius.circular(16),
+                    splashColor: Colors.white.withOpacity(0.1),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Center(
+                        child: _controller.isAnimating
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : ShaderMask(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  colors: [Colors.white, Colors.white.withOpacity(0.8)],
+                                ).createShader(bounds),
+                                child: Icon(
+                                  Icons.speed_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
-      child: FloatingActionButton(
-        heroTag: null,
-        onPressed: _healthcheck,
-        child: const Icon(Icons.network_ping),
-      ),
     );
   }
 }
