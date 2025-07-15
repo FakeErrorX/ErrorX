@@ -35,10 +35,9 @@ class InfoHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Flexible(
-            flex: 1,
+          Expanded(
             child: Row(
-              mainAxisSize: MainAxisSize.max,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 if (info.iconData != null) ...[
                   Icon(
@@ -49,8 +48,7 @@ class InfoHeader extends StatelessWidget {
                     width: 8,
                   ),
                 ],
-                Flexible(
-                  flex: 1,
+                Expanded(
                   child: TooltipText(
                     text: Text(
                       info.label,
@@ -65,16 +63,16 @@ class InfoHeader extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(
-            width: 8,
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ...actions,
-            ],
-          ),
+          if (actions.isNotEmpty) ...[
+            const SizedBox(
+              width: 8,
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: actions,
+            ),
+          ],
         ],
       ),
     );
@@ -93,6 +91,7 @@ class CommonCard extends StatelessWidget {
     this.padding,
     this.enterAnimated = false,
     this.info,
+    this.actions,
   }) : isSelected = isSelected ?? false;
 
   final bool enterAnimated;
@@ -102,6 +101,7 @@ class CommonCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets? padding;
   final Info? info;
+  final List<Widget>? actions;
   final CommonCardType type;
   final double radius;
 
@@ -154,6 +154,7 @@ class CommonCard extends StatelessWidget {
               bottom: 0,
             ),
             info: info!,
+            actions: actions,
           ),
           Flexible(
             flex: 1,
