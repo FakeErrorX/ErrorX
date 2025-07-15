@@ -1,9 +1,13 @@
 import 'package:errorx/common/common.dart';
 import 'package:errorx/fragments/config/network.dart';
 import 'package:errorx/providers/config.dart';
+import 'package:errorx/state.dart';
 import 'package:errorx/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'tun_info_dialog.dart';
+import 'system_proxy_info_dialog.dart';
 
 class TUNButton extends StatelessWidget {
   const TUNButton({super.key});
@@ -36,6 +40,24 @@ class TUNButton extends StatelessWidget {
           label: appLocalizations.tun,
           iconData: Icons.stacked_line_chart,
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              globalState.showCommonDialog(
+                child: const TunInfoDialog(),
+              );
+            },
+            icon: const Icon(Icons.info_outline),
+            iconSize: 14,
+            tooltip: "TUN Information",
+            style: IconButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              minimumSize: const Size(20, 20),
+              maximumSize: const Size(20, 20),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ],
         child: Container(
           padding: baseInfoEdgeInsets.copyWith(
             top: 4,
@@ -116,6 +138,24 @@ class SystemProxyButton extends StatelessWidget {
           label: appLocalizations.systemProxy,
           iconData: Icons.shuffle,
         ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              globalState.showCommonDialog(
+                child: const SystemProxyInfoDialog(),
+              );
+            },
+            icon: const Icon(Icons.info_outline),
+            iconSize: 14,
+            tooltip: "System Proxy Information",
+            style: IconButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              minimumSize: const Size(20, 20),
+              maximumSize: const Size(20, 20),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ],
         child: Container(
           padding: baseInfoEdgeInsets.copyWith(
             top: 4,

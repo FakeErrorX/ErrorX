@@ -2914,6 +2914,26 @@ class AppLocalizations {
       args: [],
     );
   }
+
+  /// `TUN mode creates a virtual network interface to capture and route all system traffic through the proxy. This provides system-wide traffic interception.`
+  String get tunModeDesc {
+    return Intl.message(
+      'TUN mode creates a virtual network interface to capture and route all system traffic through the proxy. This provides system-wide traffic interception.',
+      name: 'tunModeDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `System proxy configures your operating system to use the proxy for network connections. This affects most applications that respect system proxy settings.`
+  String get systemProxyModeDesc {
+    return Intl.message(
+      'System proxy configures your operating system to use the proxy for network connections. This affects most applications that respect system proxy settings.',
+      name: 'systemProxyModeDesc',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {
