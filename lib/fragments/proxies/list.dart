@@ -263,63 +263,90 @@ class _ProxiesListFragmentState extends State<ProxiesListFragment> {
           type: state.proxyCardType,
         );
         final itemsOffset = _getItemHeightList(items, state.proxyCardType);
-        return CommonScrollBar(
-          controller: _controller,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: ScrollConfiguration(
-                  behavior: HiddenBarScrollBehavior(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    controller: _controller,
-                    itemExtentBuilder: (index, __) {
-                      return itemsOffset[index];
-                    },
-                    itemCount: items.length,
-                    itemBuilder: (_, index) {
-                      return items[index];
-                    },
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                context.colorScheme.surface.withOpacity(0.5),
+                context.colorScheme.surfaceVariant.withOpacity(0.2),
+              ],
+            ),
+          ),
+          child: CommonScrollBar(
+            controller: _controller,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ScrollConfiguration(
+                    behavior: HiddenBarScrollBehavior(),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      controller: _controller,
+                      itemExtentBuilder: (index, __) {
+                        return itemsOffset[index];
+                      },
+                      itemCount: items.length,
+                      itemBuilder: (_, index) {
+                        return items[index];
+                      },
+                    ),
                   ),
                 ),
-              ),
-              LayoutBuilder(builder: (_, container) {
-                return ValueListenableBuilder(
-                  valueListenable: _headerStateNotifier,
-                  builder: (_, headerState, ___) {
-                    final index =
-                        headerState.currentIndex > state.groupNames.length - 1
-                            ? 0
-                            : headerState.currentIndex;
-                    if (index < 0 || state.groupNames.isEmpty) {
-                      return Container();
-                    }
-                    return Stack(
-                      children: [
-                        Positioned(
-                          top: -headerState.offset,
-                          child: Container(
-                            width: container.maxWidth,
-                            color: context.colorScheme.surface,
-                            padding: const EdgeInsets.only(
-                              top: 16,
-                              left: 16,
-                              right: 16,
-                              bottom: 8,
-                            ),
-                            child: _buildHeader(
-                              ref,
-                              groupName: state.groupNames[index],
-                              currentUnfoldSet: state.currentUnfoldSet,
+                LayoutBuilder(builder: (_, container) {
+                  return ValueListenableBuilder(
+                    valueListenable: _headerStateNotifier,
+                    builder: (_, headerState, ___) {
+                      final index =
+                          headerState.currentIndex > state.groupNames.length - 1
+                              ? 0
+                              : headerState.currentIndex;
+                      if (index < 0 || state.groupNames.isEmpty) {
+                        return Container();
+                      }
+                      return Stack(
+                        children: [
+                          Positioned(
+                            top: -headerState.offset,
+                            child: Container(
+                              width: container.maxWidth,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    context.colorScheme.surface.withOpacity(0.95),
+                                    context.colorScheme.surface.withOpacity(0.8),
+                                  ],
+                                ),
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: context.colorScheme.outline.withOpacity(0.1),
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                              padding: const EdgeInsets.only(
+                                top: 20,
+                                left: 20,
+                                right: 20,
+                                bottom: 12,
+                              ),
+                              child: _buildHeader(
+                                ref,
+                                groupName: state.groupNames[index],
+                                currentUnfoldSet: state.currentUnfoldSet,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              }),
-            ],
+                        ],
+                      );
+                    },
+                  );
+                }),
+              ],
+            ),
           ),
         );
       },
@@ -410,9 +437,234 @@ class _ListHeaderState extends State<ListHeader>
     }
   }
 
-  Widget _buildIcon() {
+
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    context.colorScheme.surface.withOpacity(0.9),
+                    context.colorScheme.surfaceVariant.withOpacity(0.6),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: context.colorScheme.outline.withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.colorScheme.shadow.withOpacity(0.08),
+                    blurRadius: 12,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: () => _handleChange(groupName),
+                  borderRadius: BorderRadius.circular(20),
+                  splashColor: context.colorScheme.primary.withOpacity(0.1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Modern icon container
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                context.colorScheme.primary.withOpacity(0.8),
+                                context.colorScheme.tertiary.withOpacity(0.6),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.colorScheme.primary.withOpacity(0.2),
+                                blurRadius: 8,
+                                spreadRadius: 0,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: _buildModernIcon(),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        
+                        // Group info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                groupName,
+                                style: context.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Flexible(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: context.colorScheme.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        groupType,
+                                        style: context.textTheme.labelSmall?.copyWith(
+                                          color: context.colorScheme.primary,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ),
+                                    Consumer(
+                                      builder: (_, ref, __) {
+                                        final proxyName = ref
+                                            .watch(getSelectedProxyNameProvider(groupName))
+                                            .getSafeValue("");
+                                        if (proxyName.isEmpty) return const SizedBox();
+                                        return Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              width: 3,
+                                              height: 3,
+                                              decoration: BoxDecoration(
+                                                color: context.colorScheme.onSurfaceVariant,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                proxyName,
+                                                style: context.textTheme.labelSmall?.copyWith(
+                                                  color: context.colorScheme.onSurfaceVariant,
+                                                  fontStyle: FontStyle.italic,
+                                                  fontSize: 10,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Action buttons
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (isExpand) ...[
+                              _buildActionButton(
+                                Icons.my_location_rounded,
+                                "Locate",
+                                () => widget.onScrollToSelected(groupName),
+                              ),
+                              const SizedBox(width: 8),
+                              _buildActionButton(
+                                Icons.speed_rounded,
+                                "Test",
+                                _delayTest,
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            // Expand/collapse button
+                            AnimatedBuilder(
+                              animation: _animationController,
+                              builder: (_, __) {
+                                return Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: context.colorScheme.primaryContainer.withOpacity(0.8),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: context.colorScheme.primary.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: InkWell(
+                                      onTap: () => _handleChange(groupName),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Center(
+                                        child: RotationTransition(
+                                          turns: _iconTurns,
+                                          child: Icon(
+                                            Icons.expand_more_rounded,
+                                            color: context.colorScheme.primary,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModernIcon() {
     return Consumer(
-      builder: (_, ref, child) {
+      builder: (_, ref, __) {
         final iconStyle = ref.watch(
             proxiesStyleSettingProvider.select((state) => state.iconStyle));
         final icon = ref.watch(proxiesStyleSettingProvider.select((state) {
@@ -429,172 +681,56 @@ class _ListHeaderState extends State<ListHeader>
           }
           return this.icon;
         }));
+        
         return switch (iconStyle) {
-          ProxiesIconStyle.standard => Container(
-              height: 48,
-              width: 48,
-              margin: const EdgeInsets.only(
-                right: 16,
-              ),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: context.colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: CommonTargetIcon(
-                src: icon,
-                size: 32,
-              ),
+          ProxiesIconStyle.standard => CommonTargetIcon(
+              src: icon,
+              size: 24,
             ),
-          ProxiesIconStyle.icon => Container(
-              margin: const EdgeInsets.only(
-                right: 16,
-              ),
-              child: CommonTargetIcon(
-                src: icon,
-                size: 42,
-              ),
+          ProxiesIconStyle.icon => CommonTargetIcon(
+              src: icon,
+              size: 24,
             ),
-          ProxiesIconStyle.none => Container(),
+          ProxiesIconStyle.none => Icon(
+              Icons.hub_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
         };
       },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return CommonCard(
-      enterAnimated: widget.enterAnimated,
-      key: widget.key,
-      radius: 14,
-      type: CommonCardType.filled,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+  Widget _buildActionButton(IconData icon, String tooltip, VoidCallback onPressed) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: context.colorScheme.surfaceVariant.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: context.colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Row(
-                children: [
-                  _buildIcon(),
-                  Flexible(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          groupName,
-                          style: context.textTheme.titleMedium,
-                        ),
-                        const SizedBox(
-                          height: 4,
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                groupType,
-                                style: context.textTheme.labelMedium?.toLight,
-                              ),
-                              Flexible(
-                                flex: 1,
-                                child: Consumer(
-                                  builder: (_, ref, __) {
-                                    final proxyName = ref
-                                        .watch(getSelectedProxyNameProvider(
-                                          groupName,
-                                        ))
-                                        .getSafeValue("");
-                                    return Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        if (proxyName.isNotEmpty) ...[
-                                          Flexible(
-                                            flex: 1,
-                                            child: EmojiText(
-                                              overflow: TextOverflow.ellipsis,
-                                              " · $proxyName",
-                                              style: context.textTheme
-                                                  .labelMedium?.toLight,
-                                            ),
-                                          ),
-                                        ]
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(
-                          width: 4,
-                        ),
-                      ],
-                    ),
-                  )
-                ],
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(10),
+            child: Center(
+              child: Icon(
+                icon,
+                size: 18,
+                color: context.colorScheme.onSurfaceVariant,
               ),
             ),
-            Row(
-              children: [
-                if (isExpand) ...[
-                  IconButton(
-                    visualDensity: VisualDensity.standard,
-                    onPressed: () {
-                      widget.onScrollToSelected(groupName);
-                    },
-                    icon: const Icon(
-                      Icons.adjust,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: _delayTest,
-                    visualDensity: VisualDensity.standard,
-                    icon: const Icon(
-                      Icons.network_ping,
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 6,
-                  ),
-                ],
-                AnimatedBuilder(
-                  animation: _animationController.view,
-                  builder: (_, __) {
-                    return IconButton.filledTonal(
-                      onPressed: () {
-                        _handleChange(groupName);
-                      },
-                      icon: RotationTransition(
-                        turns: _iconTurns,
-                        child: const Icon(
-                          Icons.expand_more,
-                        ),
-                      ),
-                    );
-                  },
-                )
-              ],
-            )
-          ],
+          ),
         ),
       ),
-      onPressed: () {
-        _handleChange(groupName);
-      },
     );
   }
 }

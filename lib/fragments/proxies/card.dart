@@ -34,66 +34,158 @@ class ProxyCard extends StatelessWidget {
   }
 
   Widget _buildDelayText() {
-    return SizedBox(
-      height: measure.labelSmallHeight,
-      child: Consumer(
-        builder: (context, ref, __) {
-          final delay = ref.watch(getDelayProvider(
-            proxyName: proxy.name,
-            testUrl: testUrl,
-          ));
-          return delay == 0 || delay == null
-              ? SizedBox(
-                  height: measure.labelSmallHeight,
-                  width: measure.labelSmallHeight,
-                  child: delay == 0
-                      ? const CircularProgressIndicator(
-                          strokeWidth: 2,
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.bolt),
-                          iconSize: globalState.measure.labelSmallHeight,
-                          padding: EdgeInsets.zero,
-                          onPressed: _handleTestCurrentDelay,
-                        ),
-                )
-              : GestureDetector(
-                  onTap: _handleTestCurrentDelay,
-                  child: Text(
-                    delay > 0 ? '$delay ms' : "Timeout",
-                    style: context.textTheme.labelSmall?.copyWith(
-                      overflow: TextOverflow.ellipsis,
-                      color: other.getDelayColor(
-                        delay,
-                      ),
+    return Consumer(
+      builder: (context, ref, __) {
+        final delay = ref.watch(getDelayProvider(
+          proxyName: proxy.name,
+          testUrl: testUrl,
+        ));
+        
+        if (delay == 0) {
+          return Container(
+            padding: type == ProxyCardType.min 
+                ? const EdgeInsets.symmetric(horizontal: 4, vertical: 1)
+                : const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: context.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: type == ProxyCardType.min ? 8 : 10,
+                  height: type == ProxyCardType.min ? 8 : 10,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      context.colorScheme.primary,
                     ),
                   ),
-                );
-        },
-      ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  "Testing...",
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: context.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: type == ProxyCardType.min ? 9 : 10,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        if (delay == null) {
+          return Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: _handleTestCurrentDelay,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: type == ProxyCardType.min 
+                    ? const EdgeInsets.symmetric(horizontal: 4, vertical: 1)
+                    : const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surfaceVariant.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: context.colorScheme.outline.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.speed_rounded,
+                      size: type == ProxyCardType.min ? 10 : 12,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      "Test",
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                        fontSize: type == ProxyCardType.min ? 9 : 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        
+        // Show delay result
+        final isTimeout = delay < 0;
+        final Color delayColor = isTimeout 
+            ? context.colorScheme.error 
+            : other.getDelayColor(delay) ?? context.colorScheme.onSurfaceVariant;
+        
+        return GestureDetector(
+          onTap: _handleTestCurrentDelay,
+          child: Container(
+            padding: type == ProxyCardType.min 
+                ? const EdgeInsets.symmetric(horizontal: 4, vertical: 1)
+                : const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: delayColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: delayColor.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: type == ProxyCardType.min ? 4 : 5,
+                  height: type == ProxyCardType.min ? 4 : 5,
+                  decoration: BoxDecoration(
+                    color: delayColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isTimeout ? "Timeout" : "${delay}ms",
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: delayColor,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                    fontSize: type == ProxyCardType.min ? 9 : 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildProxyNameText(BuildContext context) {
     if (type == ProxyCardType.min) {
-      return SizedBox(
-        height: measure.bodyMediumHeight * 1,
-        child: EmojiText(
-          proxy.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: context.textTheme.bodyMedium,
-        ),
+      return EmojiText(
+        proxy.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: context.textTheme.bodyMedium,
       );
     } else {
-      return SizedBox(
-        height: measure.bodyMediumHeight * 2,
-        child: EmojiText(
-          proxy.name,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: context.textTheme.bodyMedium,
-        ),
+      return EmojiText(
+        proxy.name,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: context.textTheme.bodyMedium,
       );
     }
   }
@@ -125,82 +217,239 @@ class ProxyCard extends StatelessWidget {
     final measure = globalState.measure;
     final delayText = _buildDelayText();
     final proxyNameText = _buildProxyNameText(context);
-    return Stack(
-      children: [
-        Consumer(
-          builder: (_, ref, child) {
-            final selectedProxyName =
-                ref.watch(getSelectedProxyNameProvider(groupName));
-            return CommonCard(
-              key: key,
-              enterAnimated: true,
-              onPressed: () {
-                _changeProxy(ref);
-              },
-              isSelected: selectedProxyName == proxy.name,
-              child: child!,
-            );
-          },
-          child: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                proxyNameText,
-                const SizedBox(
-                  height: 8,
+    
+    return Consumer(
+      builder: (_, ref, child) {
+        final selectedProxyName =
+            ref.watch(getSelectedProxyNameProvider(groupName));
+        final isSelected = selectedProxyName == proxy.name;
+        
+        return TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 300),
+          tween: Tween<double>(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+          curve: Curves.easeOutCubic,
+          builder: (context, animationValue, child) {
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isSelected ? [
+                    context.colorScheme.primaryContainer.withOpacity(0.8),
+                    context.colorScheme.secondaryContainer.withOpacity(0.6),
+                  ] : [
+                    context.colorScheme.surface.withOpacity(0.7),
+                    context.colorScheme.surfaceVariant.withOpacity(0.3),
+                  ],
                 ),
-                if (type == ProxyCardType.expand) ...[
-                  SizedBox(
-                    height: measure.bodySmallHeight,
-                    child: _ProxyDesc(
-                      proxy: proxy,
-                    ),
+                border: Border.all(
+                  color: isSelected 
+                      ? context.colorScheme.primary.withOpacity(0.3)
+                      : context.colorScheme.outline.withOpacity(0.1),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isSelected 
+                        ? context.colorScheme.primary.withOpacity(0.15)
+                        : context.colorScheme.shadow.withOpacity(0.08),
+                    blurRadius: isSelected ? 12 : 6,
+                    spreadRadius: 0,
+                    offset: Offset(0, isSelected ? 4 : 2),
                   ),
-                  const SizedBox(
-                    height: 6,
-                  ),
-                  delayText,
-                ] else
-                  SizedBox(
-                    height: measure.bodySmallHeight,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          flex: 1,
-                          child: TooltipText(
-                            text: Text(
-                              proxy.type,
-                              style: context.textTheme.bodySmall?.copyWith(
-                                overflow: TextOverflow.ellipsis,
-                                color:
-                                    context.textTheme.bodySmall?.color?.opacity80,
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _changeProxy(ref),
+                  splashColor: context.colorScheme.primary.withOpacity(0.1),
+                  highlightColor: context.colorScheme.primary.withOpacity(0.05),
+                  child: Stack(
+                    children: [
+                      // Background pattern for selected state
+                      if (isSelected)
+                        Positioned(
+                          top: -20,
+                          right: -20,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  context.colorScheme.primary.withOpacity(0.1),
+                                  Colors.transparent,
+                                ],
                               ),
                             ),
                           ),
                         ),
-                        delayText,
-                      ],
-                    ),
+                      
+                      // Main content
+                      Container(
+                        padding: type == ProxyCardType.min 
+                            ? const EdgeInsets.all(6) 
+                            : const EdgeInsets.all(12),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Proxy name with icon
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: type == ProxyCardType.min 
+                                      ? const EdgeInsets.all(4)
+                                      : const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? context.colorScheme.primary.withOpacity(0.1)
+                                        : context.colorScheme.surfaceVariant.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    _getProxyTypeIcon(proxy.type),
+                                    size: type == ProxyCardType.min ? 14 : 16,
+                                    color: isSelected
+                                        ? context.colorScheme.primary
+                                        : context.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                SizedBox(width: type == ProxyCardType.min ? 8 : 12),
+                                Expanded(
+                                  child: Container(
+                                    alignment: Alignment.centerLeft,
+                                    child: proxyNameText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: type == ProxyCardType.min ? 2 : 8),
+                            
+                            // Type and delay info
+                            if (type == ProxyCardType.expand) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Container(
+                                      alignment: Alignment.centerLeft,
+                                      child: _buildProxyTypeChip(context, isSelected),
+                                    ),
+                                  ),
+                                  Container(
+                                    alignment: Alignment.centerRight,
+                                    child: delayText,
+                                  ),
+                                ],
+                              ),
+                            ] else
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Container(
+                                      alignment: Alignment.centerLeft,
+                                      child: _buildProxyTypeChip(context, isSelected),
+                                    ),
+                                  ),
+                                  Container(
+                                    alignment: Alignment.centerRight,
+                                    child: delayText,
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Selection indicator
+                      if (groupType.isComputedSelected)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: _ProxyComputedMark(
+                            groupName: groupName,
+                            proxy: proxy,
+                          ),
+                        ),
+                    ],
                   ),
-              ],
-            ),
-          ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  IconData _getProxyTypeIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'shadowsocks':
+      case 'ss':
+        return Icons.security_rounded;
+      case 'vmess':
+        return Icons.vpn_lock_rounded;
+      case 'trojan':
+        return Icons.shield_rounded;
+      case 'hysteria':
+      case 'hysteria2':
+        return Icons.speed_rounded;
+      case 'wireguard':
+      case 'wg':
+        return Icons.hub_rounded;
+      case 'vless':
+        return Icons.lock_outline_rounded;
+      case 'tuic':
+        return Icons.fiber_smart_record_rounded;
+      case 'http':
+      case 'https':
+        return Icons.http_rounded;
+      case 'socks5':
+        return Icons.dns_rounded;
+      default:
+        return Icons.language_rounded;
+    }
+  }
+
+  Widget _buildProxyTypeChip(BuildContext context, bool isSelected) {
+    return Container(
+      padding: type == ProxyCardType.min 
+          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 1)
+          : const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? context.colorScheme.primary.withOpacity(0.1)
+            : context.colorScheme.surfaceVariant.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isSelected
+              ? context.colorScheme.primary.withOpacity(0.3)
+              : context.colorScheme.outline.withOpacity(0.2),
+          width: 1,
         ),
-        if (groupType.isComputedSelected)
-          Positioned(
-            top: 0,
-            right: 0,
-            child: _ProxyComputedMark(
-              groupName: groupName,
-              proxy: proxy,
-            ),
-          )
-      ],
+      ),
+      child: Text(
+        proxy.type,
+        style: context.textTheme.labelSmall?.copyWith(
+          color: isSelected
+              ? context.colorScheme.primary
+              : context.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.3,
+          fontSize: type == ProxyCardType.min ? 9 : 10,
+        ),
+      ),
     );
   }
 }
@@ -221,7 +470,7 @@ class _ProxyDesc extends ConsumerWidget {
       desc,
       overflow: TextOverflow.ellipsis,
       style: context.textTheme.bodySmall?.copyWith(
-        color: context.textTheme.bodySmall?.color?.opacity80,
+        color: context.textTheme.bodySmall?.color?.withOpacity(0.8),
       ),
     );
   }
@@ -242,19 +491,45 @@ class _ProxyComputedMark extends ConsumerWidget {
       getProxyNameProvider(groupName),
     );
     if (proxyName != proxy.name) {
-      return SizedBox();
+      return const SizedBox();
     }
-    return Container(
-      alignment: Alignment.topRight,
-      margin: const EdgeInsets.all(8),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).colorScheme.secondaryContainer,
-        ),
-        child: const SelectIcon(),
-      ),
+    
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 500),
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      curve: Curves.elasticOut,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  context.colorScheme.primary,
+                  context.colorScheme.tertiary,
+                ],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: context.colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.check_rounded,
+              size: 16,
+              color: Colors.white,
+            ),
+          ),
+        );
+      },
     );
   }
 }
