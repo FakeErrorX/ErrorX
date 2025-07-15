@@ -676,5 +676,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whitelistMode": MessageLookupByLibrary.simpleMessage("Whitelist mode"),
     "years": MessageLookupByLibrary.simpleMessage("Years"),
+    "tunModeDesc": MessageLookupByLibrary.simpleMessage(
+      "TUN mode creates a virtual network interface to capture and route all system traffic through the proxy. This provides system-wide traffic interception.",
+    ),
+    "systemProxyModeDesc": MessageLookupByLibrary.simpleMessage(
+      "System proxy configures your operating system to use the proxy for network connections. This affects most applications that respect system proxy settings.",
+    ),
   };
 }
