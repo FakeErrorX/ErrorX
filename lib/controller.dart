@@ -763,12 +763,6 @@ class AppController {
     }
   }
 
-  addProfileFormQrCode() async {
-    final url = await globalState.safeRun(picker.pickerConfigQRCode);
-    if (url == null) return;
-    addProfileFormURL(url);
-  }
-
   updateViewSize(Size size) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _ref.read(viewSizeProvider.notifier).value = size;
