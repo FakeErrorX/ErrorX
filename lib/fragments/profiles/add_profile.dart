@@ -1,5 +1,4 @@
 import 'package:errorx/common/common.dart';
-import 'package:errorx/pages/scan.dart';
 import 'package:errorx/state.dart';
 import 'package:errorx/widgets/widgets.dart';
 import 'package:flutter/material.dart';
@@ -49,23 +48,6 @@ class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateM
     HapticFeedback.mediumImpact();
     const url = 'https://raw.githubusercontent.com/FakeErrorX/ConfigX/refs/heads/master/ErrorX.yaml';
     globalState.appController.addProfileFormURL(url, name: "ErrorX");
-  }
-
-  _toScan() async {
-    HapticFeedback.mediumImpact();
-    if (system.isDesktop) {
-      globalState.appController.addProfileFormQrCode();
-      return;
-    }
-    final url = await BaseNavigator.push(
-      widget.context,
-      const ScanPage(),
-    );
-    if (url != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleAddProfileFormURL(url);
-      });
-    }
   }
 
   _toAdd() async {
@@ -253,23 +235,13 @@ class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateM
             onTap: _handleAutoDownloadErrorX,
           ),
           
-          // QR Code option
-          _buildProfileCard(
-            title: appLocalizations.qrcode,
-            subtitle: appLocalizations.qrcodeDesc,
-            icon: Icons.qr_code_scanner_rounded,
-            color: Colors.purple.shade600,
-            index: 1,
-            onTap: _toScan,
-          ),
-          
           // File option
           _buildProfileCard(
             title: appLocalizations.file,
             subtitle: appLocalizations.fileDesc,
             icon: Icons.file_present_rounded,
             color: Colors.blue.shade600,
-            index: 2,
+            index: 1,
             onTap: _handleAddProfileFormFile,
           ),
           
@@ -279,7 +251,7 @@ class _AddProfileState extends State<AddProfile> with SingleTickerProviderStateM
             subtitle: appLocalizations.urlDesc,
             icon: Icons.link_rounded,
             color: Colors.green.shade600,
-            index: 3,
+            index: 2,
             onTap: _toAdd,
           ),
         ],
