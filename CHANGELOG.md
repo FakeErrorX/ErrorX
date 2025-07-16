@@ -1,3 +1,35 @@
+## v1.0.3
+
+- Update Build template (#18)
+
+
+- v1.0.3 (#17)
+
+
+- Update Build template
+
+- Updated .github/release_template.md and README.md with improved formatting, modern badges, clearer download/platform sections, and enhanced instructions for users. Also updated macOS build target in build.yaml to use macos-15 for arm64 builds. These changes improve clarity, accessibility, and visual appeal for users and contributors.
+
+- Added Proxies UI with modern glassmorphism style
+
+- Refactors the proxies UI components to use a modern glassmorphism-inspired design, including animated gradients, rounded corners, and updated iconography. Enhances ProxyCard, group headers, action buttons, and tab bars with new layouts, transitions, and visual effects. Updates the group and proxy selection interactions for improved clarity and feedback. Bumps version to 1.0.3+202507151.
+
+- Add info for TUN and System Proxy
+
+- Introduced TunInfoDialog and SystemProxyInfoDialog components to provide users with detailed explanations of TUN and System Proxy modes. Updated quick options UI to include info buttons that open these dialogs. Added new localized strings for the mode descriptions.
+
+- Add outbound mode info dialog
+
+- Introduces an info dialog for outbound modes, accessible via an info icon in the OutboundMode widget. Adds localized descriptions for Rule, Global, and Direct modes in the l10n files. Updates CommonCard and InfoHeader to support custom actions, enabling the new info button.
+
+- Remove QR code scanning feature
+
+- This commit removes the QR code scanning feature, including the scan page, related UI, and all code paths for adding profiles via QR code. It also removes the image_picker dependency and cleans up plugin registrations and references for file_selector and image_picker across all platforms. The pubspec and lock files are updated to reflect these dependency removals.
+
+- Update CHANGELOG.md
+- Update build.yaml
+- Update CHANGELOG.md
+
 ## v1.0.2
 - Added AES-256 encryption in Go core
 - Added some security improvements
