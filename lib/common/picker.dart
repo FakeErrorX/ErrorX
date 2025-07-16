@@ -3,8 +3,6 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:errorx/common/common.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 class Picker {
   Future<PlatformFile?> pickerFile() async {
@@ -27,22 +25,6 @@ class Picker {
       await file.writeAsBytes(bytes);
     }
     return path;
-  }
-
-  Future<String?> pickerConfigQRCode() async {
-    final xFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (xFile == null) {
-      return null;
-    }
-    final controller = MobileScannerController();
-    final capture = await controller.analyzeImage(xFile.path, formats: [
-      BarcodeFormat.qrCode,
-    ]);
-    final result = capture?.barcodes.first.rawValue;
-    if (result == null || !result.isUrl) {
-      throw appLocalizations.pleaseUploadValidQrcode;
-    }
-    return result;
   }
 }
 

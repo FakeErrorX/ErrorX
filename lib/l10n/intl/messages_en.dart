@@ -201,6 +201,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Relying on third-party api is for reference only",
     ),
     "direct": MessageLookupByLibrary.simpleMessage("Direct"),
+    "directModeDesc": MessageLookupByLibrary.simpleMessage(
+      "Direct mode bypasses the proxy and connects directly to the destination. Use this when you want to disable proxy for all connections.",
+    ),
     "disclaimer": MessageLookupByLibrary.simpleMessage("Disclaimer"),
     "disclaimerDesc": MessageLookupByLibrary.simpleMessage(
       "ErrorX is for legal use only. We does not log your activity and respects your privacy. Misuse is prohibited. By using our service, you agree to our Terms of Service and Privacy Policy.",
@@ -281,6 +284,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Get original rules",
     ),
     "global": MessageLookupByLibrary.simpleMessage("Global"),
+    "globalModeDesc": MessageLookupByLibrary.simpleMessage(
+      "Global mode routes all traffic through the selected proxy. Use this when you want all connections to go through the proxy.",
+    ),
     "go": MessageLookupByLibrary.simpleMessage("Go"),
     "goDownload": MessageLookupByLibrary.simpleMessage("Go to download"),
     "hasCacheChange": MessageLookupByLibrary.simpleMessage(
@@ -545,6 +551,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "routeMode_config": MessageLookupByLibrary.simpleMessage("Use config"),
     "rule": MessageLookupByLibrary.simpleMessage("Rule"),
+    "ruleModeDesc": MessageLookupByLibrary.simpleMessage(
+      "Rule mode routes traffic based on defined rules. This is the recommended mode for optimal performance and flexibility.",
+    ),
     "ruleName": MessageLookupByLibrary.simpleMessage("Rule name"),
     "ruleProviderEmptyTip": MessageLookupByLibrary.simpleMessage(
       "Rule provider cannot be empty",
@@ -667,5 +676,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whitelistMode": MessageLookupByLibrary.simpleMessage("Whitelist mode"),
     "years": MessageLookupByLibrary.simpleMessage("Years"),
+    "tunModeDesc": MessageLookupByLibrary.simpleMessage(
+      "TUN mode creates a virtual network interface to capture and route all system traffic through the proxy. This provides system-wide traffic interception.",
+    ),
+    "systemProxyModeDesc": MessageLookupByLibrary.simpleMessage(
+      "System proxy configures your operating system to use the proxy for network connections. This affects most applications that respect system proxy settings.",
+    ),
   };
 }

@@ -27,8 +27,10 @@ class _ProxiesFragmentState extends ConsumerState<ProxiesFragment>
   @override
   get actions => [
         if (_hasProviders)
-          IconButton(
-            onPressed: () {
+          _buildModernActionButton(
+            Icons.analytics_rounded,
+            "Providers",
+            () {
               showExtend(
                 context,
                 builder: (_, type) {
@@ -38,21 +40,19 @@ class _ProxiesFragmentState extends ConsumerState<ProxiesFragment>
                 },
               );
             },
-            icon: const Icon(
-              Icons.poll_outlined,
-            ),
           ),
         _isTab
-            ? IconButton(
-                onPressed: () {
+            ? _buildModernActionButton(
+                Icons.my_location_rounded,
+                "Locate Selected",
+                () {
                   _proxiesTabKey.currentState?.scrollToGroupSelected();
                 },
-                icon: const Icon(
-                  Icons.adjust_outlined,
-                ),
               )
-            : IconButton(
-                onPressed: () {
+            : _buildModernActionButton(
+                Icons.palette_rounded,
+                "Icon Style",
+                () {
                   showExtend(
                     context,
                     builder: (_, type) {
@@ -64,12 +64,11 @@ class _ProxiesFragmentState extends ConsumerState<ProxiesFragment>
                     },
                   );
                 },
-                icon: const Icon(
-                  Icons.style_outlined,
-                ),
               ),
-        IconButton(
-          onPressed: () {
+        _buildModernActionButton(
+          Icons.tune_rounded,
+          "Settings",
+          () {
             showSheet(
               context: context,
               props: SheetProps(
@@ -84,21 +83,81 @@ class _ProxiesFragmentState extends ConsumerState<ProxiesFragment>
               },
             );
           },
-          icon: const Icon(
-            Icons.tune,
-          ),
         )
       ];
 
+  Widget _buildModernActionButton(IconData icon, String tooltip, VoidCallback onPressed) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              context.colorScheme.primaryContainer.withOpacity(0.8),
+              context.colorScheme.secondaryContainer.withOpacity(0.6),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: context.colorScheme.primary.withOpacity(0.2),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: context.colorScheme.shadow.withOpacity(0.1),
+              blurRadius: 6,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(12),
+            splashColor: context.colorScheme.primary.withOpacity(0.1),
+            child: Center(
+              child: Icon(
+                icon,
+                color: context.colorScheme.primary,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   get floatingActionButton => _isTab
-      ? DelayTestButton(
-          onClick: () async {
-            await delayTest(
-              currentTabProxies,
-              currentTabTestUrl,
-            );
-          },
+      ? Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.colorScheme.primary.withOpacity(0.3),
+                blurRadius: 12,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: DelayTestButton(
+            onClick: () async {
+              await delayTest(
+                currentTabProxies,
+                currentTabTestUrl,
+              );
+            },
+          ),
         )
       : null;
 
