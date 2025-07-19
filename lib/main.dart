@@ -14,6 +14,8 @@ import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:errorx/manager/secure_memory_manager.dart';
+
 import 'application.dart';
 import 'clash/core.dart';
 import 'clash/lib.dart';
@@ -23,6 +25,10 @@ import 'models/models.dart';
 Future<void> main() async {
   globalState.isService = false;
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize secure memory system early in app lifecycle
+  SecureMemoryManager.instance.initialize();
+  
   final version = await system.version;
   await clashCore.preload();
   await globalState.initApp(version);
