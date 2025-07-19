@@ -111,34 +111,42 @@ class EncryptionService {
     return utf8.decode(decrypt(encryptedData));
   }
   
-  // Cache methods for in-memory profile storage
+  // DEPRECATED: Cache methods for in-memory profile storage
+  // These methods store readable data in memory and should be avoided
+  // Use SecureMemoryService instead for better security
   
   // Store decrypted profile data in the memory cache
+  @Deprecated('Use SecureMemoryService.storeSecureProfile instead - this stores readable data in memory')
   static void cacheDecryptedProfile(String profileId, Uint8List decryptedData) {
     _decryptedCache[profileId] = decryptedData;
   }
   
   // Get cached decrypted profile data, or null if not in cache
+  @Deprecated('Use SecureMemoryService.withSecureProfile instead - this exposes readable data')
   static Uint8List? getCachedProfile(String profileId) {
     return _decryptedCache[profileId];
   }
   
   // Check if a profile is cached
+  @Deprecated('Use SecureMemoryService.isProfileSecured instead')
   static bool isProfileCached(String profileId) {
     return _decryptedCache.containsKey(profileId);
   }
   
   // Clear a specific profile from cache
+  @Deprecated('Use SecureMemoryService.clearSecureProfile instead')
   static void clearProfileCache(String profileId) {
     _decryptedCache.remove(profileId);
   }
   
   // Clear all profiles from cache
+  @Deprecated('Use SecureMemoryService.clearAllSecureCache instead')
   static void clearAllCache() {
     _decryptedCache.clear();
   }
   
   // Helper for reading and caching profile data - returns decrypted bytes
+  @Deprecated('Use SecureMemoryService.withSecureProfile instead - this exposes readable data')
   static Future<Uint8List> decryptAndCacheProfile(String profileId, Uint8List encryptedData) {
     // Decrypt the data
     final decryptedData = decrypt(encryptedData);
@@ -147,5 +155,10 @@ class EncryptionService {
     cacheDecryptedProfile(profileId, decryptedData);
     
     return Future.value(decryptedData);
+  }
+
+  // SECURITY: Clear all readable cache on app pause/background
+  static void clearInsecureCache() {
+    _decryptedCache.clear();
   }
 } 
