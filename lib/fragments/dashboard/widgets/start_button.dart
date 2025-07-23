@@ -39,9 +39,13 @@ class _StartButtonState extends State<StartButton>
   
   void _registerLogoutListener() {
     if (!_isListenerRegistered) {
-      _apiService.addLogoutListener(_handleLogout);
+      _apiService.addLogoutListener(
+        _handleLogout,
+        id: 'start_button_logout',
+        priority: 10, // High priority to turn off start button quickly
+      );
       _isListenerRegistered = true;
-      commonPrint.log('StartButton: Registered logout listener');
+      commonPrint.log('StartButton: Registered enhanced logout listener');
     }
   }
   
@@ -89,9 +93,9 @@ class _StartButtonState extends State<StartButton>
 
   @override
   void dispose() {
-    // Remove the logout listener
+    // Remove the logout listener by ID
     if (_isListenerRegistered) {
-      _apiService.removeLogoutListener(_handleLogout);
+      _apiService.removeLogoutListener('start_button_logout');
       _isListenerRegistered = false;
     }
     _controller.dispose();

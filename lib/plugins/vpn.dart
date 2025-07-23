@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:errorx/clash/clash.dart';
 import 'package:errorx/models/models.dart';
+import 'package:errorx/services/api_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,8 @@ abstract mixin class VpnListener {
   void onStarted(int fd) {}
 
   void onDnsChanged(String dns) {}
+  
+  void onNetworkChanged(Map<String, dynamic> networkInfo) {}
 }
 
 class Vpn {
@@ -39,6 +42,11 @@ class Vpn {
               case "dnsChanged":
                 final dns = call.arguments as String;
                 listener.onDnsChanged(dns);
+                break;
+              case "networkChanged":
+                final networkInfo = Map<String, dynamic>.from(call.arguments);
+                listener.onNetworkChanged(networkInfo);
+                break;
             }
           }
       }
