@@ -9,6 +9,7 @@ import 'package:errorx/enum/enum.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/plugins/tile.dart';
 import 'package:errorx/plugins/vpn.dart';
+import 'package:errorx/services/api_service.dart';
 import 'package:errorx/services/websocket_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
@@ -77,6 +78,12 @@ Future<void> _service(List<String> flags) async {
       },
       onDnsChanged: (String dns) {
         clashLibHandler.updateDns(dns);
+      },
+      onNetworkChanged: (Map<String, dynamic> networkInfo) {
+        commonPrint.log("Network changed: $networkInfo");
+        // Handle WebSocket reconnection for network changes
+        final apiService = ApiService();
+        apiService.handleNetworkChange(networkInfo);
       },
     ),
   );
@@ -159,12 +166,15 @@ class _TileListenerWithService with TileListener {
 class _VpnListenerWithService with VpnListener {
   final Function(int fd) _onStarted;
   final Function(String dns) _onDnsChanged;
+  final Function(Map<String, dynamic> networkInfo) _onNetworkChanged;
 
   const _VpnListenerWithService({
     required Function(int fd) onStarted,
     required Function(String dns) onDnsChanged,
+    required Function(Map<String, dynamic> networkInfo) onNetworkChanged,
   }) : _onStarted = onStarted,
-       _onDnsChanged = onDnsChanged;
+       _onDnsChanged = onDnsChanged,
+       _onNetworkChanged = onNetworkChanged;
 
   @override
   void onStarted(int fd) {
@@ -176,5 +186,11 @@ class _VpnListenerWithService with VpnListener {
   void onDnsChanged(String dns) {
     super.onDnsChanged(dns);
     _onDnsChanged(dns);
+  }
+  
+  @override
+  void onNetworkChanged(Map<String, dynamic> networkInfo) {
+    super.onNetworkChanged(networkInfo);
+    _onNetworkChanged(networkInfo);
   }
 }
