@@ -41,7 +41,7 @@ class _NetworkSpeedState extends State<NetworkSpeed> {
 
   @override
   Widget build(BuildContext context) {
-    final color = context.colorScheme.onSurfaceVariant.opacity80;
+    final color = context.colorScheme.onSurface.withOpacity(0.8);
     return SizedBox(
       height: getWidgetHeight(2),
       child: CommonCard(
@@ -56,11 +56,24 @@ class _NetworkSpeedState extends State<NetworkSpeed> {
             return Stack(
               children: [
                 Positioned.fill(
-                  child: Padding(
-                    padding: EdgeInsets.all(16).copyWith(
+                  child: Container(
+                    margin: const EdgeInsets.all(16).copyWith(
                       bottom: 0,
                       left: 0,
                       right: 0,
+                      top: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                          Colors.transparent,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: LineChart(
                       gradient: true,
@@ -70,18 +83,55 @@ class _NetworkSpeedState extends State<NetworkSpeed> {
                   ),
                 ),
                 Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Transform.translate(
-                    offset: Offset(
-                      -16,
-                      -20,
-                    ),
-                    child: Text(
-                      "${_getLastTraffic(traffics).up}↑   ${_getLastTraffic(traffics).down}↓",
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: color,
+                  top: 12,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surface.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: context.colorScheme.outline.withOpacity(0.2),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.colorScheme.shadow.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.arrow_upward,
+                          size: 14,
+                          color: context.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${_getLastTraffic(traffics).up}",
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.arrow_downward,
+                          size: 14,
+                          color: context.colorScheme.secondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${_getLastTraffic(traffics).down}",
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

@@ -57,37 +57,59 @@ class _MemoryInfoState extends State<MemoryInfo> {
         onPressed: () {
           clashCore.requestGc();
         },
-        child: Column(
-          children: [
-            ValueListenableBuilder(
-              valueListenable: _memoryInfoStateNotifier,
-              builder: (_, trafficValue, __) {
-                return Padding(
-                  padding: baseInfoEdgeInsets.copyWith(
-                    bottom: 0,
-                    top: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        trafficValue.showValue,
-                        style:
-                            context.textTheme.bodyMedium?.toLight.adjustSize(1),
-                      ),
-                      SizedBox(
-                        width: 8,
-                      ),
-                      Text(
-                        trafficValue.showUnit,
-                        style:
-                            context.textTheme.bodyMedium?.toLight.adjustSize(1),
-                      )
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: ValueListenableBuilder(
+            valueListenable: _memoryInfoStateNotifier,
+            builder: (_, trafficValue, __) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      context.colorScheme.primary.withOpacity(0.1),
+                      context.colorScheme.primary.withOpacity(0.05),
                     ],
                   ),
-                );
-              },
-            ),
-          ],
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: context.colorScheme.primary.withOpacity(0.2),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.storage,
+                      size: 12,
+                      color: context.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      trafficValue.showValue,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colorScheme.onSurface,
+                        fontSize: 10,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      trafficValue.showUnit,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: context.colorScheme.onSurface.withOpacity(0.7),
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

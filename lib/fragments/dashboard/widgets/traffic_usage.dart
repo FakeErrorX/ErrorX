@@ -16,43 +16,39 @@ class TrafficUsage extends StatelessWidget {
     Icon icon,
     TrafficValue trafficValue,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        Flexible(
-          flex: 1,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              icon,
-              const SizedBox(
-                width: 8,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainer.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          icon,
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              "${trafficValue.showValue} ${trafficValue.showUnit}",
+              style: context.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
               ),
-              Flexible(
-                flex: 1,
-                child: Text(
-                  trafficValue.showValue,
-                  style: context.textTheme.bodySmall,
-                  maxLines: 1,
-                ),
-              ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
-        Text(
-          trafficValue.showUnit,
-          style: context.textTheme.bodySmall?.toLighter,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = globalState.theme.darken3PrimaryContainer;
-    final secondaryColor = globalState.theme.darken2SecondaryContainer;
+    final primaryColor = context.colorScheme.primary;
+    final secondaryColor = context.colorScheme.secondary;
     return SizedBox(
       height: getWidgetHeight(2),
       child: CommonCard(
@@ -66,148 +62,165 @@ class TrafficUsage extends StatelessWidget {
             final totalTraffic = ref.watch(totalTrafficProvider);
             final upTotalTrafficValue = totalTraffic.up;
             final downTotalTrafficValue = totalTraffic.down;
-            return Padding(
-              padding: baseInfoEdgeInsets.copyWith(
-                top: 0,
-              ),
+            return Container(
+              padding: const EdgeInsets.all(16).copyWith(top: 8),
               child: Column(
                 mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Flexible(
                     child: Container(
-                      padding: EdgeInsets.symmetric(
-                        vertical: 12,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          AspectRatio(
-                            aspectRatio: 1,
-                            child: DonutChart(
-                              data: [
-                                DonutChartData(
-                                  value: upTotalTrafficValue.value.toDouble(),
-                                  color: primaryColor,
-                                ),
-                                DonutChartData(
-                                  value: downTotalTrafficValue.value.toDouble(),
-                                  color: secondaryColor,
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(
-                            width: 8,
-                          ),
                           Flexible(
-                            child: LayoutBuilder(
-                              builder: (_, container) {
-                                final uploadText = Text(
-                                  maxLines: 1,
-                                  appLocalizations.upload,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.textTheme.bodySmall,
-                                );
-                                final downloadText = Text(
-                                  maxLines: 1,
-                                  appLocalizations.download,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.textTheme.bodySmall,
-                                );
-                                final uploadTextSize = globalState.measure
-                                    .computeTextSize(uploadText);
-                                final downloadTextSize = globalState.measure
-                                    .computeTextSize(downloadText);
-                                final maxTextWidth = max(uploadTextSize.width,
-                                    downloadTextSize.width);
-                                if (maxTextWidth + 24 > container.maxWidth) {
-                                  return Container();
-                                }
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 20,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: primaryColor,
-                                            borderRadius:
-                                                BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: 4,
-                                        ),
-                                        Text(
-                                          maxLines: 1,
-                                          appLocalizations.upload,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: context.textTheme.bodySmall,
-                                        ),
-                                      ],
+                            flex: 1,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    primaryColor.withOpacity(0.1),
+                                    secondaryColor.withOpacity(0.1),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: DonutChart(
+                                  data: [
+                                    DonutChartData(
+                                      value: upTotalTrafficValue.value.toDouble(),
+                                      color: primaryColor,
                                     ),
-                                    SizedBox(
-                                      height: 4,
-                                    ),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 20,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: secondaryColor,
-                                            borderRadius:
-                                                BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width: 4,
-                                        ),
-                                        Text(
-                                          maxLines: 1,
-                                          appLocalizations.download,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: context.textTheme.bodySmall,
-                                        ),
-                                      ],
+                                    DonutChartData(
+                                      value: downTotalTrafficValue.value.toDouble(),
+                                      color: secondaryColor,
                                     ),
                                   ],
-                                );
-                              },
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            flex: 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: primaryColor.withOpacity(0.3),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.arrow_upward,
+                                        color: primaryColor,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          appLocalizations.upload,
+                                          style: context.textTheme.bodySmall?.copyWith(
+                                            color: primaryColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 11,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: secondaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: secondaryColor.withOpacity(0.3),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.arrow_downward,
+                                        color: secondaryColor,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          appLocalizations.download,
+                                          style: context.textTheme.bodySmall?.copyWith(
+                                            color: secondaryColor,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 11,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  _buildTrafficDataItem(
-                    context,
-                    Icon(
-                      Icons.arrow_upward,
-                      color: primaryColor,
-                      size: 14,
-                    ),
-                    upTotalTrafficValue,
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Flexible(
+                        child: _buildTrafficDataItem(
+                          context,
+                          Icon(
+                            Icons.arrow_upward,
+                            color: primaryColor,
+                            size: 14,
+                          ),
+                          upTotalTrafficValue,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: _buildTrafficDataItem(
+                          context,
+                          Icon(
+                            Icons.arrow_downward,
+                            color: secondaryColor,
+                            size: 14,
+                          ),
+                          downTotalTrafficValue,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  _buildTrafficDataItem(
-                    context,
-                    Icon(
-                      Icons.arrow_downward,
-                      color: secondaryColor,
-                      size: 14,
-                    ),
-                    downTotalTrafficValue,
-                  )
                 ],
               ),
             );

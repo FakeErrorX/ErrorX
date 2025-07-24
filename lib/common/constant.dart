@@ -19,6 +19,18 @@ const helperPort = 47890;
 const helperTag = "2024125";
 const baseInfoEdgeInsets = EdgeInsets.symmetric(vertical: 16, horizontal: 16);
 
+// Enhanced modern spacing and styling constants
+const modernCardPadding = EdgeInsets.all(16);
+const modernCardRadius = 16.0;
+const modernSpacing = 16.0;
+const modernSmallSpacing = 8.0;
+const modernLargeSpacing = 24.0;
+
+// Modern elevation and blur constants
+const modernCardElevation = 8.0;
+const modernBlurRadius = 20.0;
+const modernBorderWidth = 0.5;
+
 double textScaleFactor = min(
   WidgetsBinding.instance.platformDispatcher.textScaleFactor,
   1.2,
@@ -79,7 +91,7 @@ const viewModeColumnsMap = {
 const defaultPrimaryColor = Colors.brown;
 
 double getWidgetHeight(num lines) {
-  return max(lines * 84 * textScaleFactor + (lines - 1) * 16, 0);
+  return max(lines * 92 * textScaleFactor + (lines - 1) * 20, 0);
 }
 
 final mainIsolate = "ErrorXMainIsolate";

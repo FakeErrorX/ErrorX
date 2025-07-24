@@ -37,6 +37,28 @@ extension ColorExtension on Color {
     return withAlpha(0);
   }
 
+  // Modern glassmorphism colors
+  Color get glass {
+    return withOpacity(0.1);
+  }
+
+  Color get glassStrong {
+    return withOpacity(0.2);
+  }
+
+  Color get glassSoft {
+    return withOpacity(0.05);
+  }
+
+  // Enhanced shadow colors
+  Color get modernShadow {
+    return withOpacity(0.08);
+  }
+
+  Color get modernShadowStrong {
+    return withOpacity(0.15);
+  }
+
   Color darken([double amount = .1]) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(this);
