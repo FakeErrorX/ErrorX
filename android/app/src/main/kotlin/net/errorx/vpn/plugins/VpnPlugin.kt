@@ -10,6 +10,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.content.getSystemService
 import net.errorx.vpn.ErrorXApplication
 import net.errorx.vpn.GlobalState
