@@ -1,3 +1,21 @@
+## v1.0.4
+
+- Update modern UI/UX (#20)
+
+
+- Update network_detection.dart
+
+- Update VpnPlugin.kt
+
+- Update modern UI/UX
+
+- Fixed and Enhance WebSocket
+
+- Added memory secure storage
+
+- Update CHANGELOG.md
+- Update changelog
+
 ## v1.0.3
 - Update Build template
 - Added Proxies UI with modern glassmorphism style
