@@ -10,6 +10,7 @@ import 'package:errorx/manager/manager.dart';
 import 'package:errorx/plugins/app.dart';
 import 'package:errorx/providers/config.dart';
 import 'package:errorx/services/api_service.dart';
+import 'package:errorx/services/battery_optimization_service.dart';
 import 'package:errorx/services/websocket_service.dart';
 import 'package:errorx/state.dart';
 import 'package:flutter/material.dart';
@@ -68,9 +69,20 @@ class ApplicationState extends ConsumerState<Application> {
     _checkLoginStatus();
     _setupApplicationController();
     _setupApiService();
+    _initializeApp();
     _autoUpdateGroupTask();
     _autoUpdateProfilesTask();
     _startConnectionCheck();
+  }
+  
+  void _initializeApp() async {
+    // Initialize WebSocket service
+    final webSocketService = WebSocketService();
+    await webSocketService.initialize();
+    
+    // Check and handle battery optimization for Android
+    final batteryService = BatteryOptimizationService();
+    await batteryService.checkAndHandleBatteryOptimization();
   }
 
   Future<void> _checkLoginStatus() async {
@@ -111,35 +123,39 @@ class ApplicationState extends ConsumerState<Application> {
   }
   
   void _setupApiService() {
-    // Set up logout callback for the ApiService
-    _apiService.addLogoutListener((reason) {
-      // When logout happens, update the UI
-      setState(() {
-        _isLoggedIn = false;
-      });
-      
-      // Ensure we navigate to login page
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final navigator = globalState.navigatorKey.currentState;
-        if (navigator != null) {
-          // If we have a reason, show it to the user
-          if (reason.isNotEmpty) {
-            globalState.showMessage(
-              title: "Session Ended",
-              message: TextSpan(text: reason),
+    // Set up enhanced logout callback for the ApiService
+    _apiService.addLogoutListener(
+      (reason) {
+        // When logout happens, update the UI
+        setState(() {
+          _isLoggedIn = false;
+        });
+        
+        // Ensure we navigate to login page
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final navigator = globalState.navigatorKey.currentState;
+          if (navigator != null) {
+            // If we have a reason, show it to the user
+            if (reason.isNotEmpty) {
+              globalState.showMessage(
+                title: "Session Ended",
+                message: TextSpan(text: reason),
+              );
+            }
+            
+            // Navigate to login page
+            navigator.pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const LoginPage(),
+              ),
+              (route) => false,
             );
           }
-          
-          // Navigate to login page
-          navigator.pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const LoginPage(),
-            ),
-            (route) => false,
-          );
-        }
-      });
-    });
+        });
+      },
+      id: 'application_logout',
+      priority: 5, // Medium priority for UI updates
+    );
   }
   
   void _startConnectionCheck() {

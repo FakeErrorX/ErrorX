@@ -37,19 +37,10 @@
 
 ## 🔧 System Requirements
 
-- **Android**: Android 5.0+ (API 21+)
-- **Windows**: Windows 10/11 (x64)
-- **macOS**: macOS 10.15+ (Intel/Apple Silicon)
-- **Linux**: Ubuntu 18.04+, Debian 10+, CentOS 8+
-
----
-
-## 🚀 Quick Start
-
-1. **Download** the appropriate version for your platform
-2. **Install** and launch ErrorX
-3. **Configure** your BDIX connection
-4. **Connect** and enjoy optimized internet!
+**Android**: Android 5.0+ (API 21+)
+**Windows**: Windows 10/11 (x64)
+**macOS**: macOS 10.15+ (Intel/Apple Silicon)
+**Linux**: Ubuntu 18.04+, Debian 10+, CentOS 8+
 
 ---
 

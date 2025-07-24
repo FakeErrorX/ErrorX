@@ -10,6 +10,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.content.getSystemService
 import net.errorx.vpn.ErrorXApplication
 import net.errorx.vpn.GlobalState
@@ -187,13 +188,71 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
+            Log.d("VpnPlugin", "Network available: $network")
             networks.add(network)
             onUpdateNetwork()
+            
+            // Notify Flutter about network change for WebSocket reconnection
+            scope.launch {
+                withContext(Dispatchers.Main) {
+                    flutterMethodChannel.invokeMethod("networkChanged", mapOf(
+                        "type" to "available",
+                        "networkId" to network.toString()
+                    ))
+                }
+            }
         }
 
         override fun onLost(network: Network) {
+            Log.d("VpnPlugin", "Network lost: $network")
             networks.remove(network)
             onUpdateNetwork()
+            
+            // Notify Flutter about network change for WebSocket reconnection
+            scope.launch {
+                withContext(Dispatchers.Main) {
+                    flutterMethodChannel.invokeMethod("networkChanged", mapOf(
+                        "type" to "lost",
+                        "networkId" to network.toString()
+                    ))
+                }
+            }
+        }
+        
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            super.onCapabilitiesChanged(network, networkCapabilities)
+            Log.d("VpnPlugin", "Network capabilities changed: $network")
+            
+            // Check if this is a VPN network change
+            val hasVpn = networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+            if (hasVpn) {
+                Log.d("VpnPlugin", "VPN network detected, notifying Flutter for WebSocket handling")
+                
+                scope.launch {
+                    withContext(Dispatchers.Main) {
+                        flutterMethodChannel.invokeMethod("networkChanged", mapOf(
+                            "type" to "vpn_changed",
+                            "networkId" to network.toString(),
+                            "hasVpn" to hasVpn
+                        ))
+                    }
+                }
+            }
+        }
+        
+        override fun onLinkPropertiesChanged(network: Network, linkProperties: android.net.LinkProperties) {
+            super.onLinkPropertiesChanged(network, linkProperties)
+            Log.d("VpnPlugin", "Link properties changed: $network")
+            
+            // This is often triggered when VPN connects/disconnects
+            scope.launch {
+                withContext(Dispatchers.Main) {
+                    flutterMethodChannel.invokeMethod("networkChanged", mapOf(
+                        "type" to "link_changed",
+                        "networkId" to network.toString()
+                    ))
+                }
+            }
         }
     }
 
@@ -201,6 +260,13 @@ data object VpnPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
         addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+        // Add capability to detect VPN changes as well
+        addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+        addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+        addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            addTransportType(NetworkCapabilities.TRANSPORT_VPN)
+        }
     }.build()
 
     private fun registerNetworkCallback() {

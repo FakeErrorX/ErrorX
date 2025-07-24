@@ -107,6 +107,31 @@ class ErrorXVpnService : VpnService(), BaseServiceInterface {
             if (options.allowBypass) {
                 allowBypass()
             }
+            
+            // Add bypass for API server to prevent WebSocket disconnection
+            try {
+                // Add common API endpoints that should bypass VPN
+                addDisallowedApplication("net.errorx.vpn") // Don't route our own app through VPN
+                
+                // Try to resolve and add API server IP to bypass list
+                val apiHosts = listOf(
+                    "api.errorx.net",
+                    "ws.errorx.net",
+                    "auth.errorx.net"
+                )
+                
+                // Add these to bypass domain if not already present
+                val updatedBypassDomain = options.bypassDomain.toMutableList()
+                apiHosts.forEach { host ->
+                    if (!updatedBypassDomain.contains(host)) {
+                        updatedBypassDomain.add(host)
+                        Log.d("ErrorXVpnService", "Added $host to bypass domain for WebSocket protection")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("ErrorXVpnService", "Failed to add API server bypass: $e")
+            }
+            
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && options.systemProxy) {
                 setHttpProxy(
                     ProxyInfo.buildDirectProxy(

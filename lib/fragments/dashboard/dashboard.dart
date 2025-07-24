@@ -94,43 +94,58 @@ class _DashboardFragmentState extends ConsumerState<DashboardFragment>
   Widget build(BuildContext context) {
     final dashboardState = ref.watch(dashboardStateProvider);
     final columns = max(4 * ((dashboardState.viewWidth / 350).ceil()), 8);
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16).copyWith(
-          bottom: 88,
-        ),
-        child: SuperGrid(
-          key: key,
-          crossAxisCount: columns,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          children: [
-            ...dashboardState.dashboardWidgets
-                .where(
-                  (item) => item.platforms.contains(
-                    SupportPlatform.currentPlatform,
-                  ),
-                )
-                .map(
-                  (item) => item.widget,
-                ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            context.colorScheme.background,
+            context.colorScheme.background.withOpacity(0.95),
+            context.colorScheme.surface.withOpacity(0.9),
           ],
-          onSave: (girdItems) {
-            _handleSave(girdItems, ref);
-          },
-          addedItemsBuilder: (girdItems) {
-            return DashboardWidget.values
-                .where(
-                  (item) =>
-                      !girdItems.contains(item.widget) &&
-                      item.platforms.contains(
-                        SupportPlatform.currentPlatform,
-                      ),
-                )
-                .map((item) => item.widget)
-                .toList();
-          },
+          stops: const [0.0, 0.3, 1.0],
+        ),
+      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20).copyWith(
+            bottom: 100,
+            top: 24,
+          ),
+          child: SuperGrid(
+            key: key,
+            crossAxisCount: columns,
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 20,
+            children: [
+              ...dashboardState.dashboardWidgets
+                  .where(
+                    (item) => item.platforms.contains(
+                      SupportPlatform.currentPlatform,
+                    ),
+                  )
+                  .map(
+                    (item) => item.widget,
+                  ),
+            ],
+            onSave: (girdItems) {
+              _handleSave(girdItems, ref);
+            },
+            addedItemsBuilder: (girdItems) {
+              return DashboardWidget.values
+                  .where(
+                    (item) =>
+                        !girdItems.contains(item.widget) &&
+                        item.platforms.contains(
+                          SupportPlatform.currentPlatform,
+                        ),
+                  )
+                  .map((item) => item.widget)
+                  .toList();
+            },
+          ),
         ),
       ),
     );

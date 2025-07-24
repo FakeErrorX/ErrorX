@@ -11,6 +11,58 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:errorx/state.dart';
 import 'package:http/http.dart' as http;
 
+// Enhanced logout listener class with metadata
+class LogoutListener {
+  final String id;
+  final void Function(String) callback;
+  final int priority;
+  final bool runOnce;
+  final DateTime createdAt;
+  bool hasRun = false;
+  
+  LogoutListener({
+    required this.id,
+    required this.callback,
+    this.priority = 0,
+    this.runOnce = false,
+  }) : createdAt = DateTime.now();
+  
+  @override
+  String toString() {
+    return 'LogoutListener(id: $id, priority: $priority, runOnce: $runOnce, hasRun: $hasRun)';
+  }
+}
+
+// Logout event details
+class LogoutEvent {
+  final String reason;
+  final LogoutType type;
+  final DateTime timestamp;
+  final Map<String, dynamic> metadata;
+  
+  LogoutEvent({
+    required this.reason,
+    required this.type,
+    Map<String, dynamic>? metadata,
+  }) : timestamp = DateTime.now(),
+       metadata = metadata ?? {};
+       
+  @override
+  String toString() {
+    return 'LogoutEvent(reason: $reason, type: $type, timestamp: $timestamp)';
+  }
+}
+
+// Types of logout events
+enum LogoutType {
+  manual,           // User initiated logout
+  sessionExpired,   // License/session expired
+  connectionLost,   // WebSocket connection lost
+  networkChanged,   // Network change triggered logout
+  error,           // Error-based logout
+  forced,          // Forced logout by system
+}
+
 class ApiService {
   // Base URLs from secrets.dart
   static final String baseUrl = apiBaseUrl;
@@ -31,8 +83,23 @@ class ApiService {
   Timer? _pingChecker;
   DateTime? _lastPingTime;
   
-  // Callbacks for logout
-  final List<void Function(String)> _logoutListeners = [];
+  // Network change handling
+  Timer? _networkChangeDebouncer;
+  bool _isHandlingNetworkChange = false;
+  
+  // Enhanced logout listener system
+  final List<LogoutListener> _logoutListeners = [];
+  bool _isLoggingOut = false;
+  
+  // Getters for internal state (needed by WebSocket service)
+  String? get licenseKey => _licenseKey;
+  bool get isReconnecting => _isReconnecting;
+  bool get isLoggingOut => _isLoggingOut;
+  
+  // Public method to trigger WebSocket connection (for external services)
+  void connectWebSocket() {
+    _connectWebSocket();
+  }
   
   // Singleton pattern
   static final ApiService _instance = ApiService._internal();
@@ -43,23 +110,82 @@ class ApiService {
   
   ApiService._internal();
   
-  // Add a logout listener
-  void addLogoutListener(void Function(String) listener) {
-    if (!_logoutListeners.contains(listener)) {
-      _logoutListeners.add(listener);
+  // Add a logout listener with priority and metadata
+  void addLogoutListener(
+    void Function(String) listener, {
+    String? id,
+    int priority = 0,
+    bool runOnce = false,
+  }) {
+    final logoutListener = LogoutListener(
+      id: id ?? 'listener_${DateTime.now().millisecondsSinceEpoch}',
+      callback: listener,
+      priority: priority,
+      runOnce: runOnce,
+    );
+    
+    // Check if listener with same ID already exists
+    _logoutListeners.removeWhere((l) => l.id == logoutListener.id);
+    
+    // Insert based on priority (higher priority first)
+    _logoutListeners.add(logoutListener);
+    _logoutListeners.sort((a, b) => b.priority.compareTo(a.priority));
+    
+    commonPrint.log('Added logout listener: ${logoutListener.id} (priority: ${logoutListener.priority})');
+  }
+  
+  // Remove a logout listener by callback or ID
+  void removeLogoutListener(dynamic identifier) {
+    if (identifier is String) {
+      // Remove by ID
+      final initialCount = _logoutListeners.length;
+      _logoutListeners.removeWhere((l) => l.id == identifier);
+      if (_logoutListeners.length < initialCount) {
+        commonPrint.log('Removed logout listener by ID: $identifier');
+      }
+    } else if (identifier is Function) {
+      // Remove by callback function
+      final initialCount = _logoutListeners.length;
+      _logoutListeners.removeWhere((l) => l.callback == identifier);
+      if (_logoutListeners.length < initialCount) {
+        commonPrint.log('Removed logout listener by callback');
+      }
     }
   }
   
-  // Remove a logout listener
-  void removeLogoutListener(void Function(String) listener) {
-    _logoutListeners.remove(listener);
+  // Clear all logout listeners
+  void clearLogoutListeners() {
+    final count = _logoutListeners.length;
+    _logoutListeners.clear();
+    commonPrint.log('Cleared $count logout listeners');
   }
   
   // Set the logout callback (for backwards compatibility)
   void setLogoutCallback(void Function(String) callback) {
     // Clear existing listeners to maintain old behavior
-    _logoutListeners.clear();
-    _logoutListeners.add(callback);
+    clearLogoutListeners();
+    addLogoutListener(callback, id: 'legacy_callback', priority: 100);
+  }
+  
+  // Get current logout listeners count
+  int get logoutListenersCount => _logoutListeners.length;
+  
+  // Get logout listener details for debugging
+  List<String> getLogoutListenerInfo() {
+    return _logoutListeners.map((l) => l.toString()).toList();
+  }
+  
+  // Get connection status details
+  Map<String, dynamic> getConnectionStatus() {
+    return {
+      'isConnected': isWebSocketConnected(),
+      'isReconnecting': _isReconnecting,
+      'isLoggingOut': _isLoggingOut,
+      'licenseKeyPresent': _licenseKey != null,
+      'lastPingTime': _lastPingTime?.toIso8601String(),
+      'sessionToken': _sessionToken != null,
+      'logoutListenersCount': logoutListenersCount,
+    };
   }
   
   // Get device ID
@@ -240,24 +366,24 @@ class ApiService {
         },
       );
       
-      // Set up ping response timer
+      // Set up ping response timer - more frequent pings
       _pingTimer?.cancel();
       _pingTimer = Timer.periodic(
-        const Duration(seconds: 20),
+        const Duration(seconds: 15), // Reduced from 20 seconds for better connection detection
         (_) => _sendPong(),
       );
       
       // Set initial ping time so we can detect if pings stop
       _lastPingTime = DateTime.now();
       
-      // Add ping checker to detect silent disconnections
+      // Add ping checker to detect silent disconnections - more sensitive
       _pingChecker?.cancel();
-      _pingChecker = Timer.periodic(const Duration(seconds: 30), (_) {
+      _pingChecker = Timer.periodic(const Duration(seconds: 20), (_) { // Reduced from 30 seconds
         final now = DateTime.now();
         final timeSinceLastPing = _lastPingTime != null ? 
           now.difference(_lastPingTime!) : const Duration(seconds: 0);
           
-        if (_lastPingTime != null && timeSinceLastPing.inSeconds > 60) {
+        if (_lastPingTime != null && timeSinceLastPing.inSeconds > 45) { // Reduced from 60 seconds
           commonPrint.log('No ping received in ${timeSinceLastPing.inSeconds} seconds, connection likely lost');
           _handleWebSocketReconnect();
         }
@@ -304,11 +430,84 @@ class ApiService {
     _pingChecker = null;
     
     // Trigger logout for UI update
-    _triggerLogout('Connection to server lost');
+    _triggerLogout('Connection to server lost', type: LogoutType.connectionLost);
     
     // Reset reconnecting flag
     Future.delayed(const Duration(seconds: 2), () {
       _isReconnecting = false;
+    });
+  }
+  
+  // Handle network changes (called when VPN connects/disconnects)
+  void handleNetworkChange(Map<String, dynamic> networkInfo) {
+    if (_isHandlingNetworkChange) {
+      return;
+    }
+    
+    final type = networkInfo['type'] as String?;
+    final hasVpn = networkInfo['hasVpn'] as bool? ?? false;
+    
+    commonPrint.log('Network change detected: $type, hasVpn: $hasVpn');
+    
+    // Only handle VPN-related network changes or significant connectivity changes
+    if (type == 'vpn_changed' || type == 'link_changed') {
+      _isHandlingNetworkChange = true;
+      
+      // Debounce network change handling to avoid rapid reconnections
+      _networkChangeDebouncer?.cancel();
+      _networkChangeDebouncer = Timer(const Duration(seconds: 2), () {
+        _handleNetworkChangeReconnection();
+      });
+    }
+  }
+  
+  // Handle WebSocket reconnection due to network changes
+  void _handleNetworkChangeReconnection() {
+    _isHandlingNetworkChange = false;
+    
+    if (_licenseKey == null) {
+      return; // Not logged in
+    }
+    
+    commonPrint.log('Handling WebSocket reconnection due to network change');
+    
+    // Close existing connection if it exists
+    if (_webSocketChannel != null) {
+      try {
+        _webSocketChannel?.sink.close();
+      } catch (e) {
+        commonPrint.log('Error closing existing WebSocket: $e');
+      }
+      _webSocketChannel = null;
+    }
+    
+    // Cancel existing timers
+    _pingTimer?.cancel();
+    _pingTimer = null;
+    _pingChecker?.cancel();
+    _pingChecker = null;
+    
+    // Wait a moment before reconnecting to allow network to stabilize
+    Future.delayed(const Duration(seconds: 1), () {
+      if (_licenseKey != null) {
+        commonPrint.log('Attempting WebSocket reconnection after network change');
+        _connectWebSocket();
+        
+        // Verify connection after a delay
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_webSocketChannel == null && _licenseKey != null) {
+            commonPrint.log('WebSocket reconnection failed after network change');
+            // Don't trigger logout immediately for network changes, give it more time
+            Future.delayed(const Duration(seconds: 5), () {
+              if (_webSocketChannel == null && _licenseKey != null) {
+                _triggerLogout('Connection to server lost after network change', type: LogoutType.networkChanged);
+              }
+            });
+          } else {
+            commonPrint.log('WebSocket reconnection successful after network change');
+          }
+        });
+      }
     });
   }
   
@@ -341,7 +540,7 @@ class ApiService {
           
         case 'license_expired':
           commonPrint.log('License expired: ${data['message']}');
-          _triggerLogout(data['message'] ?? 'Your license has expired');
+          _triggerLogout(data['message'] ?? 'Your license has expired', type: LogoutType.sessionExpired);
           break;
           
         default:
@@ -385,35 +584,139 @@ class ApiService {
     }
   }
   
-  // Trigger logout and UI update
-  void _triggerLogout(String reason) {
-    commonPrint.log('Triggering logout: $reason');
-    
-    // Stop any running processes directly
-    if (globalState.isStart) {
-      commonPrint.log('ApiService: Stopping active processes during logout');
-      
-      // Force stop all operations, clear timers and state
-      globalState.startTime = null;
-      globalState.handleStop();
-      
-      // Make sure app controller state is updated too
-      globalState.appController.updateStatus(false);
+  // Enhanced logout trigger with detailed event handling
+  void _triggerLogout(String reason, {LogoutType? type, Map<String, dynamic>? metadata}) {
+    // Prevent multiple simultaneous logout operations
+    if (_isLoggingOut) {
+      commonPrint.log('Logout already in progress, ignoring: $reason');
+      return;
     }
     
-    // Clean up connection and state
-    _cleanupConnection();
+    _isLoggingOut = true;
+    commonPrint.log('Triggering logout: $reason (type: ${type ?? LogoutType.connectionLost})');
     
-    // Update SharedPreferences
-    _updateLoginState(false);
-    
-    // Notify all listeners
-    for (final listener in _logoutListeners) {
-      try {
-        listener(reason);
-      } catch (e) {
-        commonPrint.log('Error in logout listener: $e');
+    try {
+      // Create logout event
+      final logoutEvent = LogoutEvent(
+        reason: reason,
+        type: type ?? _determineLogoutType(reason),
+        metadata: {
+          'timestamp': DateTime.now().toIso8601String(),
+          'wasStart': globalState.isStart,
+          'licenseKey': _licenseKey?.substring(0, 8) ?? 'none', // Only log first 8 chars for privacy
+          'webSocketConnected': _webSocketChannel != null,
+          ...?metadata,
+        },
+      );
+      
+      // Stop any running processes directly
+      if (globalState.isStart) {
+        commonPrint.log('ApiService: Stopping active processes during logout (${logoutEvent.type})');
+        
+        // Force stop all operations, clear timers and state
+        globalState.startTime = null;
+        globalState.handleStop();
+        
+        // Make sure app controller state is updated too
+        globalState.appController.updateStatus(false);
       }
+      
+      // Clean up connection and state
+      _cleanupConnection();
+      
+      // Update SharedPreferences
+      _updateLoginState(false);
+      
+      // Execute logout listeners in priority order with error handling
+      _executeLogoutListeners(logoutEvent);
+      
+    } catch (e) {
+      commonPrint.log('Error during logout process: $e');
+    } finally {
+      // Reset logout flag after a brief delay to prevent rapid re-triggers
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _isLoggingOut = false;
+      });
+    }
+  }
+  
+  // Determine logout type based on reason
+  LogoutType _determineLogoutType(String reason) {
+    final lowerReason = reason.toLowerCase();
+    
+    if (lowerReason.contains('expire')) {
+      return LogoutType.sessionExpired;
+    } else if (lowerReason.contains('network') || lowerReason.contains('vpn')) {
+      return LogoutType.networkChanged;
+    } else if (lowerReason.contains('connection') || lowerReason.contains('websocket')) {
+      return LogoutType.connectionLost;
+    } else if (lowerReason.contains('error')) {
+      return LogoutType.error;
+    } else if (lowerReason.isEmpty) {
+      return LogoutType.manual;
+    } else {
+      return LogoutType.forced;
+    }
+  }
+  
+  // Execute logout listeners with enhanced error handling and metrics
+  void _executeLogoutListeners(LogoutEvent event) {
+    if (_logoutListeners.isEmpty) {
+      commonPrint.log('No logout listeners to execute');
+      return;
+    }
+    
+    final startTime = DateTime.now();
+    int successCount = 0;
+    int errorCount = 0;
+    final errors = <String>[];
+    
+    commonPrint.log('Executing ${_logoutListeners.length} logout listeners for event: ${event.type}');
+    
+    // Create a copy to avoid concurrent modification
+    final listenersToExecute = List<LogoutListener>.from(_logoutListeners);
+    
+    for (final listener in listenersToExecute) {
+      try {
+        // Skip if already run and marked as runOnce
+        if (listener.runOnce && listener.hasRun) {
+          commonPrint.log('Skipping runOnce listener ${listener.id} (already executed)');
+          continue;
+        }
+        
+        // Execute listener with timeout protection
+        final stopwatch = Stopwatch()..start();
+        
+        listener.callback(event.reason);
+        listener.hasRun = true;
+        
+        stopwatch.stop();
+        successCount++;
+        
+        if (stopwatch.elapsedMilliseconds > 1000) {
+          commonPrint.log('Warning: Logout listener ${listener.id} took ${stopwatch.elapsedMilliseconds}ms');
+        }
+        
+      } catch (e) {
+        errorCount++;
+        final errorMsg = 'Error in logout listener ${listener.id}: $e';
+        errors.add(errorMsg);
+        commonPrint.log(errorMsg);
+      }
+    }
+    
+    // Remove runOnce listeners that have been executed
+    _logoutListeners.removeWhere((l) => l.runOnce && l.hasRun);
+    
+    final executionTime = DateTime.now().difference(startTime);
+    commonPrint.log(
+      'Logout listeners execution completed: '
+      '$successCount successful, $errorCount errors, '
+      'took ${executionTime.inMilliseconds}ms'
+    );
+    
+    if (errors.isNotEmpty) {
+      commonPrint.log('Logout listener errors: ${errors.join('; ')}');
     }
   }
   
@@ -424,6 +727,8 @@ class ApiService {
     _pingTimer = null;
     _pingChecker?.cancel();
     _pingChecker = null;
+    _networkChangeDebouncer?.cancel();
+    _networkChangeDebouncer = null;
     
     // Close WebSocket
     if (_webSocketChannel != null) {
@@ -460,35 +765,56 @@ class ApiService {
     }
   }
   
-  // Manual logout
-  Future<void> logout() async {
-    commonPrint.log('Manual logout initiated');
+  // Enhanced manual logout with better user experience
+  Future<void> logout({String? reason, Map<String, dynamic>? metadata}) async {
+    final logoutReason = reason ?? 'User requested logout';
+    commonPrint.log('Manual logout initiated: $logoutReason');
     
-    // Force stop all operations first
-    if (globalState.isStart) {
-      commonPrint.log('ApiService: Stopping active processes for manual logout');
-      globalState.startTime = null;
-      globalState.handleStop();
-      globalState.appController.updateStatus(false);
+    // Prevent multiple logout calls
+    if (_isLoggingOut) {
+      commonPrint.log('Logout already in progress, ignoring manual logout request');
+      return;
     }
     
-    // Clean up connection and session
-    _cleanupConnection();
-    
-    // Update login state
-    await _updateLoginState(false);
-    
-    // Clear license key
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('license_key');
-    
-    // Notify all listeners
-    for (final listener in _logoutListeners) {
-      try {
-        listener('');
-      } catch (e) {
-        commonPrint.log('Error in logout listener: $e');
+    try {
+      // Force stop all operations first
+      if (globalState.isStart) {
+        commonPrint.log('ApiService: Stopping active processes for manual logout');
+        globalState.startTime = null;
+        globalState.handleStop();
+        globalState.appController.updateStatus(false);
       }
+      
+      // Clean up connection and session
+      _cleanupConnection();
+      
+      // Update login state
+      await _updateLoginState(false);
+      
+      // Clear license key from preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('license_key');
+      
+      // Create enhanced logout event for manual logout
+      final logoutEvent = LogoutEvent(
+        reason: logoutReason,
+        type: LogoutType.manual,
+        metadata: {
+          'userInitiated': true,
+          'timestamp': DateTime.now().toIso8601String(),
+          ...?metadata,
+        },
+      );
+      
+      // Execute logout listeners
+      _executeLogoutListeners(logoutEvent);
+      
+      commonPrint.log('Manual logout completed successfully');
+      
+    } catch (e) {
+      commonPrint.log('Error during manual logout: $e');
+      // Still try to trigger basic logout on error
+      _triggerLogout(logoutReason, type: LogoutType.error, metadata: {'error': e.toString()});
     }
   }
   
@@ -575,14 +901,14 @@ class ApiService {
         Future.delayed(const Duration(seconds: 2), () {
           if (_webSocketChannel == null) {
             commonPrint.log('WebSocket reconnection failed - logging out');
-            _triggerLogout('Connection to server lost');
+            _triggerLogout('Connection to server lost', type: LogoutType.connectionLost);
           } else {
             commonPrint.log('WebSocket reconnection successful');
           }
         });
       } catch (e) {
         commonPrint.log('Error reconnecting WebSocket: $e');
-        _triggerLogout('Connection to server lost');
+        _triggerLogout('Connection to server lost', type: LogoutType.connectionLost);
       }
       return;
     }
@@ -592,7 +918,7 @@ class ApiService {
     final timeSinceLastPing = _lastPingTime != null ? 
       now.difference(_lastPingTime!) : const Duration(seconds: 0);
       
-    if (_lastPingTime != null && timeSinceLastPing.inSeconds > 60) {
+    if (_lastPingTime != null && timeSinceLastPing.inSeconds > 45) { // Reduced from 60 seconds
       commonPrint.log('Last ping was ${timeSinceLastPing.inSeconds} seconds ago - connection likely lost');
       
       // Close existing connection and try to reconnect
@@ -606,12 +932,12 @@ class ApiService {
         // Verify connection after a delay
         Future.delayed(const Duration(seconds: 2), () {
           if (_webSocketChannel == null) {
-            _triggerLogout('Connection to server lost');
+            _triggerLogout('Connection to server lost', type: LogoutType.connectionLost);
           }
         });
       } catch (e) {
         commonPrint.log('Error handling stale connection: $e');
-        _triggerLogout('Connection to server lost');
+        _triggerLogout('Connection to server lost', type: LogoutType.connectionLost);
       }
       return;
     }

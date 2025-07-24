@@ -26,19 +26,21 @@ class WebSocketService(private val context: Context) {
             // Set the method channel reference in the worker
             WebSocketWorker.setMethodChannel(methodChannel)
             
-            // Configure worker constraints - require network connectivity
+            // Configure worker constraints - require network connectivity and be lenient about battery
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(false) // Allow running even when battery is low
+                .setRequiresStorageNotLow(false) // Allow running even when storage is low
                 .build()
             
-            // Create a periodic work request that runs every 20 seconds
+            // Create a periodic work request that runs every 15 seconds
             // (minimum interval is 15 minutes for standard periodic work,
             // but we use a workaround with exponential backoff)
             val pingWorkRequest = OneTimeWorkRequestBuilder<WebSocketWorker>()
                 .setConstraints(constraints)
                 .setBackoffCriteria(
                     BackoffPolicy.LINEAR,
-                    20, // Retry after 20 seconds
+                    15, // Retry after 15 seconds (reduced from 20 for more frequent checks)
                     TimeUnit.SECONDS
                 )
                 .addTag("websocket_ping")
@@ -63,10 +65,17 @@ class WebSocketService(private val context: Context) {
      */
     fun scheduleNextPing() {
         try {
-            // Create a one-time work request that runs after 20 seconds
+            // Create a one-time work request that runs after 15 seconds (reduced from 20)
             val pingWorkRequest = OneTimeWorkRequestBuilder<WebSocketWorker>()
-                .setInitialDelay(20, TimeUnit.SECONDS)
+                .setInitialDelay(15, TimeUnit.SECONDS)
                 .addTag("websocket_ping")
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .setRequiresBatteryNotLow(false) // Allow running even when battery is low
+                        .setRequiresStorageNotLow(false) // Allow running even when storage is low
+                        .build()
+                )
                 .build()
             
             // Enqueue the work request

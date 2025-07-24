@@ -29,8 +29,19 @@ class InfoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: padding ?? baseInfoEdgeInsets,
+    return Container(
+      padding: padding ?? const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.surface.withOpacity(0.8),
+            Theme.of(context).colorScheme.surface.withOpacity(0.4),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -40,13 +51,30 @@ class InfoHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (info.iconData != null) ...[
-                  Icon(
-                    info.iconData,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Icon(
+                      info.iconData,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                  const SizedBox(
-                    width: 8,
-                  ),
+                  const SizedBox(width: 12),
                 ],
                 Expanded(
                   child: TooltipText(
@@ -55,7 +83,9 @@ class InfoHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant,
+                            color: context.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
                           ),
                     ),
                   ),
@@ -64,13 +94,21 @@ class InfoHeader extends StatelessWidget {
             ),
           ),
           if (actions.isNotEmpty) ...[
-            const SizedBox(
-              width: 8,
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: actions,
+            const SizedBox(width: 12),
+            Wrap(
+              spacing: 4,
+              children: actions.map((action) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: action,
+                );
+              }).toList(),
             ),
           ],
         ],
@@ -109,24 +147,24 @@ class CommonCard extends StatelessWidget {
   // final WidgetStateProperty<BorderSide?>? borderSide;
 
   BorderSide getBorderSide(BuildContext context, Set<WidgetState> states) {
-    final colorScheme = context.colorScheme;
     if (type == CommonCardType.filled) {
       return BorderSide.none;
     }
-    final hoverColor = isSelected
-        ? colorScheme.primary.opacity80
-        : colorScheme.primary.opacity60;
+    
     if (states.contains(WidgetState.hovered) ||
         states.contains(WidgetState.focused) ||
         states.contains(WidgetState.pressed)) {
       return BorderSide(
-        color: hoverColor,
+        color: context.colorScheme.primary.withOpacity(0.6),
+        width: 1.2,
       );
     }
+    
     return BorderSide(
       color: isSelected
-          ? colorScheme.primary
-          : colorScheme.surfaceContainerHighest,
+          ? context.colorScheme.primary.withOpacity(0.8)
+          : context.colorScheme.outline.withOpacity(0.15),
+      width: 0.8,
     );
   }
 
@@ -134,11 +172,16 @@ class CommonCard extends StatelessWidget {
     if (type == CommonCardType.filled) {
       return context.colorScheme.surfaceContainer;
     }
-    final colorScheme = context.colorScheme;
+    
     if (isSelected) {
-      return colorScheme.secondaryContainer;
+      return context.colorScheme.primaryContainer.withOpacity(0.8);
     }
-    return colorScheme.surfaceContainerLow;
+    
+    if (states.contains(WidgetState.hovered)) {
+      return context.colorScheme.surface.withOpacity(0.9);
+    }
+    
+    return context.colorScheme.surface.withOpacity(0.7);
   }
 
   @override
@@ -177,27 +220,50 @@ class CommonCard extends StatelessWidget {
       );
     }
 
-    final card = OutlinedButton(
-      onLongPress: null,
-      clipBehavior: Clip.antiAlias,
-      style: ButtonStyle(
-        padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+    final card = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            getBackgroundColor(context, {}) ?? context.colorScheme.surface.withOpacity(0.8),
+            (getBackgroundColor(context, {}) ?? context.colorScheme.surface).withOpacity(0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: context.colorScheme.outline.withOpacity(0.1),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.colorScheme.shadow.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: context.colorScheme.primary.withOpacity(0.03),
+            blurRadius: 40,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(radius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(radius),
+          onTap: onPressed,
+          splashColor: context.colorScheme.primary.withOpacity(0.1),
+          highlightColor: context.colorScheme.primary.withOpacity(0.05),
+          child: Container(
+            padding: padding ?? EdgeInsets.zero,
+            child: childWidget,
           ),
         ),
-        iconColor: WidgetStatePropertyAll(context.colorScheme.primary),
-        iconSize: WidgetStateProperty.all(20),
-        backgroundColor: WidgetStateProperty.resolveWith(
-          (states) => getBackgroundColor(context, states),
-        ),
-        side: WidgetStateProperty.resolveWith(
-          (states) => getBorderSide(context, states),
-        ),
       ),
-      onPressed: onPressed,
-      child: childWidget,
     );
 
     return switch (enterAnimated) {

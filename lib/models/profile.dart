@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:errorx/clash/clash.dart';
 import 'package:errorx/common/common.dart';
 import 'package:errorx/common/encryption_service.dart';
+import 'package:errorx/common/secure_memory_service.dart';
 import 'package:errorx/enum/enum.dart';
 import 'package:equatable/equatable.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -177,25 +178,29 @@ extension ProfileExtension on Profile {
     return file;
   }
 
+  /// Get file content using secure memory service
+  /// This no longer stores readable YAML in memory
   Future<String> getFileContent() async {
     final file = await getFile();
     final bytes = await file.readAsBytes();
     
-    // Check if the file is already in the cache
-    if (EncryptionService.isProfileCached(id)) {
-      // Use cached decrypted data
-      final cachedBytes = EncryptionService.getCachedProfile(id);
-      return utf8.decode(cachedBytes!);
+    // Check if the file is already in secure cache
+    if (SecureMemoryService.isProfileSecured(id)) {
+      // Use secure profile access - only decrypts temporarily
+      return await SecureMemoryService.withSecureProfile(id, (yamlContent) async {
+        return yamlContent;
+      });
     }
     
-    // Decrypt the data and cache it
-    final decryptedBytes = await EncryptionService.decryptAndCacheProfile(id, bytes);
-    
-    return utf8.decode(decryptedBytes);
+    // Store in secure cache and return content
+    SecureMemoryService.storeSecureProfile(id, bytes);
+    return await SecureMemoryService.withSecureProfile(id, (yamlContent) async {
+      return yamlContent;
+    });
   }
 
-  /// Prepares the profile for Clash Core by making the decrypted content available in memory
-  /// This method no longer writes decrypted content to disk
+  /// Prepares the profile for Clash Core using secure memory
+  /// This method ensures no readable YAML is cached in memory
   Future<void> prepareForClashCore() async {
     final file = await getFile();
     final bytes = await file.readAsBytes();
@@ -205,33 +210,42 @@ extension ProfileExtension on Profile {
       return;
     }
     
-    // Check if this content is already cached
-    if (EncryptionService.isProfileCached(id)) {
-      return; // Already prepared
+    // Check if this content is already in secure cache
+    if (SecureMemoryService.isProfileSecured(id)) {
+      return; // Already prepared securely
     }
     
-    // Decrypt and cache for future use
-    await EncryptionService.decryptAndCacheProfile(id, bytes);
-    // No need to log routine operations
+    // Store in secure cache (encrypted + obfuscated format)
+    SecureMemoryService.storeSecureProfile(id, bytes);
   }
 
-  /// Access the decrypted profile content in memory and provide it to the callback function
-  /// This handles all operations that would need direct access to the decrypted content
-  Future<T> withDecryptedContent<T>(Future<T> Function(Uint8List decryptedBytes) operation) async {
+  /// Access the profile content securely with a callback function
+  /// The content is only decrypted temporarily during the operation
+  Future<T> withSecureContent<T>(Future<T> Function(String yamlContent) operation) async {
     final file = await getFile();
     final bytes = await file.readAsBytes();
     
-    // Check if already in cache
-    Uint8List decryptedBytes;
-    if (EncryptionService.isProfileCached(id)) {
-      decryptedBytes = EncryptionService.getCachedProfile(id)!;
-    } else {
-      // Decrypt and cache
-      decryptedBytes = await EncryptionService.decryptAndCacheProfile(id, bytes);
+    // Ensure it's in secure cache
+    if (!SecureMemoryService.isProfileSecured(id)) {
+      SecureMemoryService.storeSecureProfile(id, bytes);
     }
     
-    // Perform the operation with decrypted bytes
-    return await operation(decryptedBytes);
+    // Use secure access - content is only readable during the callback
+    return await SecureMemoryService.withSecureProfile(id, operation);
+  }
+
+  /// Legacy method - now redirects to secure content access
+  @Deprecated('Use withSecureContent instead for better security')
+  Future<T> withDecryptedContent<T>(Future<T> Function(Uint8List decryptedBytes) operation) async {
+    return await withSecureContent<T>((yamlContent) async {
+      final bytes = Uint8List.fromList(utf8.encode(yamlContent));
+      try {
+        return await operation(bytes);
+      } finally {
+        // Clear the temporary bytes
+        bytes.fillRange(0, bytes.length, 0);
+      }
+    });
   }
 
   Future<int> get profileLastModified async {
@@ -253,12 +267,10 @@ extension ProfileExtension on Profile {
     try {
       // Check if the incoming data is already encrypted
       if (EncryptionService.hasEncryptionHeader(bytes)) {
-        commonPrint.log("Importing encrypted profile - decrypting first");
+        commonPrint.log("Importing encrypted profile - processing securely");
         try {
-          // Decrypt the data first
-          final decryptedBytes = EncryptionService.decrypt(bytes);
-          // Process the decrypted data
-          final data = utf8.decode(decryptedBytes, allowMalformed: false).trim();
+          // Process using secure content access
+          final data = utf8.decode(EncryptionService.decrypt(bytes), allowMalformed: false).trim();
           return await saveFileWithString(data);
         } catch (e) {
           commonPrint.log("Failed to decrypt encrypted profile: $e");
@@ -302,13 +314,14 @@ extension ProfileExtension on Profile {
       // Convert string to bytes
       final rawBytes = utf8.encode(data);
       
-      // Store the decrypted bytes in the cache
-      EncryptionService.cacheDecryptedProfile(id, Uint8List.fromList(rawBytes));
-      
       // Always encrypt before saving to disk
       final encryptedBytes = EncryptionService.encrypt(Uint8List.fromList(rawBytes));
       
       await file.writeAsBytes(encryptedBytes);
+      
+      // Store in secure memory cache (removes any old cache)
+      SecureMemoryService.clearSecureProfile(id);
+      SecureMemoryService.storeSecureProfile(id, encryptedBytes);
       
       return copyWith(lastUpdateDate: DateTime.now());
     } catch (e) {

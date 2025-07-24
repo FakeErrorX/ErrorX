@@ -98,13 +98,36 @@ class WebSocketService {
         // Schedule the next ping (as a backup in case the worker fails)
         _scheduleNextPing();
       } else {
-        commonPrint.log('WebSocket not connected, attempting to reconnect');
+        commonPrint.log('WebSocket not connected from background worker, attempting to reconnect');
         
-        // Check connection and attempt to reconnect if needed
-        apiService.checkConnection();
+        // Attempt to reconnect if we have credentials
+        final apiService = ApiService();
+        final shouldReconnect = apiService.licenseKey != null && !apiService.isReconnecting;
+        if (shouldReconnect) {
+          commonPrint.log('Attempting WebSocket reconnection from background worker');
+          
+          // Try to reconnect
+          apiService.connectWebSocket();
+          
+          // Schedule another check
+          Future.delayed(const Duration(seconds: 5), () {
+            if (!apiService.isWebSocketConnected() && apiService.licenseKey != null) {
+              commonPrint.log('Background WebSocket reconnection failed, will retry');
+              _scheduleNextPing(); // Keep trying
+            }
+          });
+        } else {
+          // Stop the background service if we don't have credentials
+          if (apiService.licenseKey == null) {
+            stopKeepAliveService();
+          }
+        }
       }
     } catch (e) {
       commonPrint.log('Error sending ping to keep WebSocket alive: $e');
+      
+      // Schedule next ping even on error to keep trying
+      _scheduleNextPing();
     }
   }
   

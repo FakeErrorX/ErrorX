@@ -1,6 +1,7 @@
 package net.errorx.vpn
 
 import net.errorx.vpn.plugins.AppPlugin
+import net.errorx.vpn.plugins.BatteryOptimizationPlugin
 import net.errorx.vpn.plugins.ServicePlugin
 import net.errorx.vpn.plugins.TilePlugin
 import net.errorx.vpn.plugins.WebSocketPlugin
@@ -13,6 +14,7 @@ class MainActivity : FlutterActivity() {
         flutterEngine.plugins.add(AppPlugin())
         flutterEngine.plugins.add(ServicePlugin)
         flutterEngine.plugins.add(TilePlugin())
+        flutterEngine.plugins.add(BatteryOptimizationPlugin())
         WebSocketPlugin.registerWith(flutterEngine, context)
         GlobalState.flutterEngine = flutterEngine
     }
