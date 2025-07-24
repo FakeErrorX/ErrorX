@@ -17,11 +17,17 @@ class AccountFragment extends ConsumerStatefulWidget {
   _AccountFragmentState createState() => _AccountFragmentState();
 }
 
-class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+class _AccountFragmentState extends ConsumerState<AccountFragment> with TickerProviderStateMixin {
+  late AnimationController _mainAnimationController;
+  late AnimationController _pulseController;
+  late AnimationController _shimmerController;
+  
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
-  late Animation<double> _rotateAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _shimmerAnimation;
+  
   Timer? _refreshTimer;
   final ApiService _apiService = ApiService();
   
@@ -40,39 +46,55 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-    
-    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-      ),
-    );
-    
-    _rotateAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack),
-      ),
-    );
-    
+    _initializeAnimations();
     _loadLicenseInfo();
     
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateRemainingTime();
     });
+  }
+  
+  void _initializeAnimations() {
+    _mainAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
     
-    _animationController.forward();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainAnimationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+      ),
+    );
+    
+    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainAnimationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutBack),
+      ),
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainAnimationController,
+        curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+      ),
+    );
+    
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(_pulseController);
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(_shimmerController);
+    
+    _mainAnimationController.forward();
   }
   
   Future<void> _loadLicenseInfo() async {
@@ -186,7 +208,9 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
   @override
   void dispose() {
     _refreshTimer?.cancel();
-    _animationController.dispose();
+    _mainAnimationController.dispose();
+    _pulseController.dispose();
+    _shimmerController.dispose();
     super.dispose();
   }
 
@@ -195,125 +219,237 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
     final theme = Theme.of(context);
     
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return _buildLoadingScreen(theme);
     }
     
     if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error Loading License Information',
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Text(
-                _errorMessage,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loadLicenseInfo,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
+      return _buildErrorScreen(theme);
     }
     
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with account info card
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, -0.2),
-                  end: Offset.zero,
-                ).animate(_slideAnimation),
-                child: _buildAccountCard(theme),
-              ),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // License Information header with animated icon
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.verified_user_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    "License Information",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // License details cards
-            ..._buildInfoCards(theme),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface,
+            theme.colorScheme.surface.withOpacity(0.95),
           ],
+        ),
+      ),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Premium Header
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, -0.3),
+                    end: Offset.zero,
+                  ).animate(_slideAnimation),
+                  child: _buildPremiumHeader(theme),
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // License Information Section
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: _buildLicenseSection(theme),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // License details cards
+              ..._buildPremiumInfoCards(theme),
+            ],
+          ),
         ),
       ),
     );
   }
   
-  Widget _buildAccountCard(ThemeData theme) {
+  Widget _buildLoadingScreen(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedBuilder(
+            animation: _pulseAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _pulseAnimation.value,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primary.withOpacity(0.7),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.shield,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Loading License Information',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Please wait while we verify your subscription',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildErrorScreen(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.red.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              color: Colors.red,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Connection Error',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          _buildRetryButton(theme),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildRetryButton(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _loadLicenseInfo,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.refresh_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Retry',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildPremiumHeader(ThemeData theme) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 20,
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 25,
             spreadRadius: 0,
-            offset: const Offset(0, 5),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Stack(
             children: [
-              // Gradient background with pattern
+              // Premium gradient background
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
@@ -321,10 +457,12 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Color(0xFF6C5CE7),
-                        Color(0xFF5758BB),
-                        Color(0xFF543BD4),
+                        const Color(0xFF667eea),
+                        const Color(0xFF764ba2),
+                        const Color(0xFFf093fb),
+                        const Color(0xFFf5576c),
                       ],
+                      stops: const [0.0, 0.25, 0.75, 1.0],
                     ),
                   ),
                 ),
@@ -332,52 +470,50 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
               
               // Content
               Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(28.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Account Info section
                     Row(
                       children: [
-                        // Animated shield icon
+                        // Animated premium shield
                         AnimatedBuilder(
-                          animation: _rotateAnimation,
+                          animation: _pulseAnimation,
                           builder: (context, child) {
                             return Transform.scale(
-                              scale: 0.9 + (_rotateAnimation.value * 0.1),
-                              child: child,
+                              scale: _pulseAnimation.value,
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 15,
+                                      spreadRadius: 0,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.workspace_premium_rounded,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
                             );
                           },
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.25),
-                                width: 2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 10,
-                                  spreadRadius: 0,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.shield,
-                                color: Colors.white,
-                                size: 36,
-                              ),
-                            ),
-                          ),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 24),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,30 +521,48 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
                               const Text(
                                 "ErrorX",
                                 style: TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 32,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
-                                  letterSpacing: 0.5,
+                                  letterSpacing: 0.8,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black26,
+                                      offset: Offset(0, 2),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(30),
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withOpacity(0.3),
                                     width: 1,
                                   ),
                                 ),
-                                child: Text(
-                                  "$_subscriptionType Subscription",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.verified_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      "$_subscriptionType",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -420,10 +574,10 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
                 ),
               ),
               
-              // Decorative elements (circles) overlaid on the background
+              // Premium decorative elements
               Positioned.fill(
                 child: IgnorePointer(
-                  child: _buildDecorativeElements(),
+                  child: _buildPremiumDecorations(),
                 ),
               ),
             ],
@@ -433,16 +587,58 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
     );
   }
   
-  Widget _buildDecorativeElements() {
+  Widget _buildPremiumDecorations() {
     return SizedBox.expand(
       child: Stack(
         children: [
+          // Floating particles
           Positioned(
-            top: -20,
-            right: -20,
+            top: 20,
+            right: 30,
+            child: AnimatedBuilder(
+              animation: _shimmerAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(_shimmerAnimation.value * 20, 0),
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            left: 20,
+            child: AnimatedBuilder(
+              animation: _shimmerAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(-_shimmerAnimation.value * 15, 0),
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Large decorative circles
+          Positioned(
+            top: -40,
+            right: -40,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.08),
                 shape: BoxShape.circle,
@@ -450,25 +646,13 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
             ),
           ),
           Positioned(
-            bottom: -30,
-            left: -30,
+            bottom: -50,
+            left: -50,
             child: Container(
-              width: 150,
-              height: 150,
+              width: 200,
+              height: 200,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.05),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 50,
-            left: 100,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -478,29 +662,89 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
     );
   }
   
-  List<Widget> _buildInfoCards(ThemeData theme) {
-    // Use a date format that displays in local time with timezone
+  Widget _buildLicenseSection(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.verified_user_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "License Information",
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Your subscription details and status",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  List<Widget> _buildPremiumInfoCards(ThemeData theme) {
     final dateFormat = DateFormat('MMM dd, yyyy h:mm:ss a');
     
-    // Function to format UTC date to local time
     String formatLocalTime(DateTime? utcDate) {
       if (utcDate == null) return "Unknown";
-      
-      // Convert UTC time to local time
       final localDate = utcDate.toLocal();
-      
-      // Format without timezone name
       return dateFormat.format(localDate);
     }
     
     final items = [
-      _LicenseInfoItem(
+      _PremiumLicenseInfoItem(
         icon: Icons.key_rounded,
-        iconColor: Colors.orange,
+        iconColor: const Color(0xFFFF6B35),
         title: "License Key",
         value: _licenseKey,
         index: 0,
-        animationController: _animationController,
+        animationController: _mainAnimationController,
         isSensitive: true,
         isVisible: _isLicenseKeyVisible,
         onToggleVisibility: () {
@@ -509,46 +753,46 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
           });
         },
       ),
-      _LicenseInfoItem(
+      _PremiumLicenseInfoItem(
         icon: Icons.workspace_premium_rounded,
-        iconColor: Colors.purple,
+        iconColor: const Color(0xFF9C27B0),
         title: "Subscription Type",
         value: _subscriptionType,
         index: 1,
-        animationController: _animationController,
+        animationController: _mainAnimationController,
       ),
-      _LicenseInfoItem(
+      _PremiumLicenseInfoItem(
         icon: Icons.play_circle_rounded,
-        iconColor: Colors.green,
+        iconColor: const Color(0xFF4CAF50),
         title: "Start Date",
         value: formatLocalTime(_startDate),
         index: 2,
-        animationController: _animationController,
+        animationController: _mainAnimationController,
       ),
-      _LicenseInfoItem(
+      _PremiumLicenseInfoItem(
         icon: Icons.event_rounded,
-        iconColor: Colors.red,
+        iconColor: const Color(0xFFF44336),
         title: "Expiry Date",
         value: formatLocalTime(_expiryDate),
         index: 3,
-        animationController: _animationController,
+        animationController: _mainAnimationController,
       ),
-      _LicenseInfoItem(
+      _PremiumLicenseInfoItem(
         icon: Icons.hourglass_top_rounded,
-        iconColor: Colors.blue,
+        iconColor: const Color(0xFF2196F3),
         title: "Time Remaining",
         value: _remainingTime,
         index: 4,
-        animationController: _animationController,
+        animationController: _mainAnimationController,
         isLive: true,
       ),
-      _LicenseInfoItem(
+      _PremiumLicenseInfoItem(
         icon: Icons.laptop_rounded,
-        iconColor: Colors.teal,
+        iconColor: const Color(0xFF009688),
         title: "Platform",
         value: _platform,
         index: 5,
-        animationController: _animationController,
+        animationController: _mainAnimationController,
       ),
     ];
     
@@ -556,7 +800,7 @@ class _AccountFragmentState extends ConsumerState<AccountFragment> with SingleTi
   }
 }
 
-class _LicenseInfoItem extends StatelessWidget {
+class _PremiumLicenseInfoItem extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String title;
@@ -568,7 +812,7 @@ class _LicenseInfoItem extends StatelessWidget {
   final bool isVisible;
   final VoidCallback? onToggleVisibility;
   
-  const _LicenseInfoItem({
+  const _PremiumLicenseInfoItem({
     Key? key,
     required this.icon,
     required this.iconColor,
@@ -586,18 +830,17 @@ class _LicenseInfoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    // Staggered animation
     final animation = CurvedAnimation(
       parent: animationController,
       curve: Interval(
         0.1 + (index * 0.05),
-        0.7 + (index * 0.05),
+        0.35 + (index * 0.05),
         curve: Curves.easeOutCubic,
       ),
     );
     
     final slideAnimation = Tween<Offset>(
-      begin: const Offset(0.3, 0),
+      begin: const Offset(0.4, 0),
       end: Offset.zero,
     ).animate(animation);
     
@@ -606,113 +849,140 @@ class _LicenseInfoItem extends StatelessWidget {
       end: 1.0,
     ).animate(animation);
     
+    final scaleAnimation = Tween<double>(
+      begin: 0.9,
+      end: 1.0,
+    ).animate(animation);
+    
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.only(bottom: 20.0),
       child: FadeTransition(
         opacity: fadeAnimation,
         child: SlideTransition(
           position: slideAnimation,
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-              border: Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  // Icon container
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        color: iconColor,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(width: 16),
-                  
-                  // Title and value
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SelectableText(
-                                isSensitive && !isVisible ? "••••••••••••••••" : value,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ),
-                            if (isLive)
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.green.withOpacity(0.5),
-                                      blurRadius: 4,
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (isSensitive && onToggleVisibility != null)
-                              IconButton(
-                                icon: Icon(
-                                  isVisible
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: theme.colorScheme.primary.withOpacity(0.7),
-                                  size: 20,
-                                ),
-                                onPressed: onToggleVisibility,
-                                tooltip: isVisible ? 'Hide license key' : 'Show license key',
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                splashRadius: 18,
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
+          child: ScaleTransition(
+            scale: scaleAnimation,
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.08),
+                  width: 1,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    // Premium icon container
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            iconColor.withOpacity(0.15),
+                            iconColor.withOpacity(0.08),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: iconColor.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          icon,
+                          color: iconColor,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 20),
+                    
+                    // Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SelectableText(
+                                  isSensitive && !isVisible ? "••••••••••••••••" : value,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.2,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              if (isLive)
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.green.withOpacity(0.5),
+                                        blurRadius: 6,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (isSensitive && onToggleVisibility != null)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: onToggleVisibility,
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(
+                                          isVisible
+                                              ? Icons.visibility_off_rounded
+                                              : Icons.visibility_rounded,
+                                          color: theme.colorScheme.primary.withOpacity(0.7),
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

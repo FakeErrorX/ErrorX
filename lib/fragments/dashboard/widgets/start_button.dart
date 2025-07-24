@@ -160,37 +160,84 @@ class _StartButtonState extends State<StartButton>
         return AnimatedBuilder(
           animation: _controller.view,
           builder: (_, child) {
-            return SizedBox(
+            return Container(
               width: 56 + textWidth * _controller.value,
               height: 56,
-              child: FloatingActionButton(
-                heroTag: null,
-                onPressed: () {
-                  handleSwitchStart();
-                },
-                child: Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      alignment: Alignment.center,
-                      child: AnimatedIcon(
-                        icon: AnimatedIcons.play_pause,
-                        progress: _controller,
-                      ),
-                    ),
-                    Expanded(
-                      child: ClipRect(
-                        child: OverflowBox(
-                          maxWidth: textWidth,
-                          child: Container(
-                            alignment: Alignment.centerLeft,
-                            child: child!,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isStart
+                      ? [
+                          context.colorScheme.error,
+                          context.colorScheme.error.darken(0.1),
+                        ]
+                      : [
+                          context.colorScheme.primary,
+                          context.colorScheme.primary.darken(0.1),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isStart ? context.colorScheme.error : context.colorScheme.primary)
+                        .withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                    spreadRadius: 0,
+                  ),
+                  BoxShadow(
+                    color: (isStart ? context.colorScheme.error : context.colorScheme.primary)
+                        .withOpacity(0.1),
+                    blurRadius: 40,
+                    offset: const Offset(0, 16),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(28),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  onTap: () {
+                    handleSwitchStart();
+                  },
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        margin: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Center(
+                          child: AnimatedIcon(
+                            icon: AnimatedIcons.play_pause,
+                            progress: _controller,
+                            color: Colors.white,
+                            size: 24,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      if (_controller.value > 0)
+                        Expanded(
+                          child: Container(
+                            alignment: Alignment.centerLeft,
+                            margin: const EdgeInsets.only(left: 4, right: 4),
+                            child: ClipRect(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: _controller.value,
+                                child: child!,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -204,7 +251,17 @@ class _StartButtonState extends State<StartButton>
           final text = other.getTimeText(runTime);
           return Text(
             text,
-            style: Theme.of(context).textTheme.titleMedium?.toSoftBold,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.3),
+                  offset: const Offset(0, 1),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
           );
         },
       ),

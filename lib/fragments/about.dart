@@ -11,13 +11,11 @@ class Contributor {
   final String avatar;
   final String name;
   final String link;
-  final String role;
 
   const Contributor({
     required this.avatar,
     required this.name,
     required this.link,
-    required this.role,
   });
 }
 
@@ -267,75 +265,79 @@ class _AboutFragmentState extends State<AboutFragment> with SingleTickerProvider
         avatar: "assets/images/avatars/errorx.jpg",
         name: "ErrorX",
         link: "https://t.me/FakeErrorX",
-        role: "Team Lead / Full-stack",
-      ),
-      Contributor(
-        avatar: "assets/images/avatars/revilx.jpg",
-        name: "REvilX",
-        link: "https://t.me/REvilX",
-        role: "Backend Developer",
-      ),
-      Contributor(
-        avatar: "assets/images/avatars/smraaz.jpg",
-        name: "Your Raaz",
-        link: "https://t.me/smraaz",
-        role: "UI/UX Designer",
-      ),
-      Contributor(
-        avatar: "assets/images/avatars/inhumantt.jpg",
-        name: "Kaniel Outis",
-        link: "https://t.me/inhumantt",
-        role: "Contributor",
-      ),
-      Contributor(
-        avatar: "assets/images/avatars/Ninja2249.jpg",
-        name: "Ninja",
-        link: "https://t.me/Ninja2249",
-        role: "Contributor",
-      ),
-      Contributor(
-        avatar: "assets/images/avatars/Vampire.jpg",
-        name: "Vampire",
-        link: "https://t.me/vampirerrors",
-        role: "Contributor",
       ),
     ];
     
-    final animation = CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
-    );
-    
     return [
-      FadeTransition(
-        opacity: Tween<double>(begin: 0, end: 1).animate(animation),
-        child: SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(animation),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
+      Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surfaceVariant.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          children: [
+            Text(
+              "Developer",
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: context.colorScheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  "Development Team",
-                  style: context.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: context.colorScheme.onSurfaceVariant,
-                    fontSize: 14,
+                InkWell(
+                  borderRadius: BorderRadius.circular(50),
+                  splashColor: context.colorScheme.primary.withOpacity(0.1),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    globalState.openUrl(contributors[0].link);
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: context.colorScheme.primary.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.colorScheme.shadow.withOpacity(0.15),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(50),
+                          child: Image.asset(
+                            contributors[0].avatar,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        contributors[0].name,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                InfiniteScrollContributors(
-                  contributors: contributors,
-                  animationController: _animationController,
-                  ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     ];
@@ -447,190 +449,6 @@ class _AboutFragmentState extends State<AboutFragment> with SingleTickerProvider
           // Actions
           _buildMoreSection(context),
         ],
-      ),
-    );
-  }
-}
-
-class ModernAvatar extends StatelessWidget {
-  final Contributor contributor;
-  final int index;
-  final AnimationController animationController;
-
-  const ModernAvatar({
-    super.key,
-    required this.contributor,
-    required this.index,
-    required this.animationController,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Ensure the end value never exceeds 1.0
-    final double start = min(0.4 + (0.05 * index), 0.6);
-    final double end = min(0.9, start + 0.3);
-    
-    final animation = CurvedAnimation(
-      parent: animationController,
-      curve: Interval(
-        start,
-        end,
-        curve: Curves.easeOutBack,
-      ),
-    );
-    
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0, end: 1).animate(animation),
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: Offset(0, 0.5 + (0.1 * min(index, 5))),
-          end: Offset.zero,
-        ).animate(animation),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(50),
-          splashColor: context.colorScheme.primary.withOpacity(0.1),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            globalState.openUrl(contributor.link);
-          },
-      child: Column(
-        children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: context.colorScheme.primary.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.colorScheme.shadow.withOpacity(0.15),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(50),
-                  child: Image.asset(
-                contributor.avatar,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                contributor.name,
-                style: context.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                ),
-              ),
-              Text(
-                contributor.role,
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.primary,
-                  fontSize: 9,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class InfiniteScrollContributors extends StatefulWidget {
-  final List<Contributor> contributors;
-  final AnimationController animationController;
-
-  const InfiniteScrollContributors({
-    Key? key,
-    required this.contributors,
-    required this.animationController,
-  }) : super(key: key);
-
-  @override
-  _InfiniteScrollContributorsState createState() => _InfiniteScrollContributorsState();
-}
-
-class _InfiniteScrollContributorsState extends State<InfiniteScrollContributors> {
-  late ScrollController _scrollController;
-  late Timer _timer;
-  final double _scrollSpeed = 15.0; // Pixels per second
-  final int _scrollDuration = 16; // Milliseconds between each scroll
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    
-    // Delay starting the animation until the initial build is complete
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startScrolling();
-    });
-  }
-  
-  void _startScrolling() {
-    _timer = Timer.periodic(Duration(milliseconds: _scrollDuration), (timer) {
-      if (!mounted) return;
-      
-      final double maxExtent = _scrollController.position.maxScrollExtent;
-      final double currentPosition = _scrollController.position.pixels;
-      final double step = _scrollSpeed * _scrollDuration / 1000;
-      
-      // Reset to beginning when we reach the end
-      if (currentPosition >= maxExtent) {
-        _scrollController.jumpTo(0);
-      } else {
-        _scrollController.animateTo(
-          currentPosition + step,
-          duration: Duration(milliseconds: _scrollDuration),
-          curve: Curves.linear,
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80, // Fixed height for the scrolling area
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(), // Disable manual scrolling
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Repeat the list multiple times to create a longer looping effect
-            ...List.generate(5, (_) => 
-              Row(
-                children: List.generate(widget.contributors.length, (i) =>
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: ModernAvatar(
-                      contributor: widget.contributors[i],
-                      index: i,
-                      animationController: widget.animationController,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
