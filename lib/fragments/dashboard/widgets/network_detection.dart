@@ -230,121 +230,123 @@ class _NetworkDetectionState extends ConsumerState<NetworkDetection> {
                               ),
                             ),
                           ),
+                          if (ipInfo != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: context.colorScheme.surface.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: context.colorScheme.outline.withOpacity(0.2),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: IconButton(
+                                padding: const EdgeInsets.all(2),
+                                onPressed: () {
+                                  setState(() {
+                                    _showIP = !_showIP;
+                                  });
+                                },
+                                icon: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Icon(
+                                    key: ValueKey(_showIP),
+                                    _showIP ? Icons.visibility : Icons.visibility_off,
+                                    size: 12,
+                                    color: context.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                     // Content Area
                     Expanded(
-                      child: Container(
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: context.colorScheme.surfaceVariant.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: context.colorScheme.outline.withOpacity(0.2),
-                                    width: 0.5,
-                                  ),
-                                ),
-                                child: FadeThroughBox(
-                                  child: ipInfo != null
-                                      ? Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.location_on_outlined,
-                                              size: 12,
-                                              color: context.colorScheme.primary,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Flexible(
-                                              child: Text(
-                                                _showIP ? ipInfo.ip : _maskIpAddress(ipInfo.ip),
-                                                style: context.textTheme.bodySmall?.copyWith(
-                                                  fontFamily: 'monospace',
-                                                  fontWeight: FontWeight.w600,
-                                                  color: context.colorScheme.onSurface,
-                                                  fontSize: 10,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        )
-                                      : Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            if (isLoading)
-                                              SizedBox(
-                                                width: 12,
-                                                height: 12,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 1.5,
-                                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                                    context.colorScheme.primary,
-                                                  ),
-                                                ),
-                                              )
-                                            else
-                                              Icon(
-                                                Icons.error_outline,
-                                                size: 12,
-                                                color: Colors.red,
-                                              ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              isLoading ? "Detecting..." : "Timeout",
-                                              style: context.textTheme.bodySmall?.copyWith(
-                                                color: isLoading 
-                                                    ? context.colorScheme.onSurfaceVariant
-                                                    : Colors.red,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                ),
-                              ),
+                        child: Container(
+                          constraints: BoxConstraints(minHeight: 36),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                context.colorScheme.secondaryContainer.withOpacity(0.6),
+                                context.colorScheme.secondaryContainer.withOpacity(0.3),
+                              ],
                             ),
-                            if (ipInfo != null) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: context.colorScheme.surface.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: context.colorScheme.outline.withOpacity(0.2),
-                                    width: 0.5,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: context.colorScheme.secondary.withOpacity(0.3),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: FadeThroughBox(
+                            child: ipInfo != null
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.location_on_outlined,
+                                        size: 12,
+                                        color: context.colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          _showIP ? ipInfo.ip : _maskIpAddress(ipInfo.ip),
+                                          style: context.textTheme.bodySmall?.copyWith(
+                                            fontFamily: 'monospace',
+                                            fontWeight: FontWeight.w600,
+                                            color: context.colorScheme.onSurface,
+                                            fontSize: 10,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (isLoading)
+                                        SizedBox(
+                                          width: 12,
+                                          height: 12,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1.5,
+                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                              context.colorScheme.primary,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        Icon(
+                                          Icons.error_outline,
+                                          size: 12,
+                                          color: Colors.red,
+                                        ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        isLoading ? "Detecting..." : "Timeout",
+                                        style: context.textTheme.bodySmall?.copyWith(
+                                          color: isLoading 
+                                              ? context.colorScheme.onSurfaceVariant
+                                              : Colors.red,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                child: IconButton(
-                                  padding: const EdgeInsets.all(2),
-                                  onPressed: () {
-                                    setState(() {
-                                      _showIP = !_showIP;
-                                    });
-                                  },
-                                  icon: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Icon(
-                                      key: ValueKey(_showIP),
-                                      _showIP ? Icons.visibility : Icons.visibility_off,
-                                      size: 12,
-                                      color: context.colorScheme.primary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
+                          ),
                         ),
                       ),
                     ),
